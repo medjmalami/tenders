@@ -474,49 +474,51 @@ svg .pill{ fill:var(--bg); stroke:var(--orange); stroke-width:1; }
             <marker id="a6o" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--orange)"/></marker>
           </defs>
 
-          <rect x="10" y="15" width="410" height="270" rx="14" fill="none" stroke="var(--border)" stroke-dasharray="3 4"/>
+          <rect x="10" y="15" width="300" height="270" rx="14" fill="none" stroke="var(--border)" stroke-dasharray="3 4"/>
           <text class="sub" x="30" y="34">SERVICE 1 · NestJS (sole Postgres writer)</text>
 
-          <rect class="box" x="30" y="50" width="120" height="45" rx="10"/>
-          <text class="lbl" x="90" y="70" text-anchor="middle" style="font-size:12px">BullMQ</text>
-          <text class="sub" x="90" y="84" text-anchor="middle">per-site jobs</text>
+          <rect class="box" x="30" y="55" width="110" height="45" rx="10"/>
+          <text class="lbl" x="85" y="75" text-anchor="middle" style="font-size:12px">BullMQ</text>
+          <text class="sub" x="85" y="89" text-anchor="middle">per-site jobs</text>
 
-          <path class="edge" d="M150,72 H210" marker-end="url(#a6)"/>
-          <rect class="box" x="210" y="50" width="120" height="45" rx="10"/>
-          <text class="lbl" x="270" y="70" text-anchor="middle" style="font-size:12px">Sites A/B/C</text>
+          <path class="edge" d="M140,77 H170" marker-end="url(#a6)"/>
+          <rect class="box" x="170" y="55" width="110" height="45" rx="10"/>
+          <text class="lbl" x="225" y="75" text-anchor="middle" style="font-size:12px">Sites A/B/C</text>
 
-          <path class="edge" d="M90,95 V135" marker-end="url(#a6)"/>
-          <rect class="box blue" x="30" y="135" width="150" height="45" rx="10"/>
-          <text class="lbl" x="105" y="155" text-anchor="middle" style="font-size:12px">tender-jobs</text>
-          <text class="sub" x="105" y="169" text-anchor="middle">queue · producer: NestJS</text>
+          <rect class="box" x="30" y="205" width="260" height="50" rx="10"/>
+          <text class="lbl" x="160" y="225" text-anchor="middle" style="font-size:12px">Postgres + digest</text>
+          <text class="sub" x="160" y="239" text-anchor="middle">write · CEO email</text>
 
-          <rect class="box new" x="30" y="205" width="150" height="45" rx="10"/>
-          <text class="lbl" x="105" y="225" text-anchor="middle" style="font-size:12px">tender-results</text>
-          <text class="sub" x="105" y="239" text-anchor="middle">queue · consumer: NestJS</text>
-          <text class="badge-new" x="105" y="197" text-anchor="middle">NEW</text>
-
-          <path class="edge" d="M180,227 H230" marker-end="url(#a6)"/>
-          <rect class="box green" x="230" y="205" width="150" height="45" rx="10"/>
-          <text class="lbl" x="305" y="225" text-anchor="middle" style="font-size:12px">Postgres + digest</text>
-          <text class="sub" x="305" y="239" text-anchor="middle">write · CEO email</text>
-
-          <rect x="450" y="15" width="500" height="270" rx="14" fill="none" stroke="var(--orange)" stroke-dasharray="3 4"/>
-          <text class="sub" x="470" y="34" fill="var(--orange)">SERVICE 2 · LangGraph — stateless, scaled independently</text>
+          <rect x="560" y="15" width="390" height="270" rx="14" fill="none" stroke="var(--orange)" stroke-dasharray="3 4"/>
+          <text class="sub" x="580" y="34" fill="var(--orange)">SERVICE 2 · LangGraph — stateless, scaled independently</text>
           <text class="badge-new" x="930" y="34" text-anchor="end">NEW SERVICE</text>
 
-          <rect class="box purple" x="620" y="110" width="180" height="90" rx="12"/>
-          <text class="lbl" x="710" y="140" text-anchor="middle">LangGraph</text>
-          <text class="sub" x="710" y="158" text-anchor="middle">ranker → detail → draft</text>
-          <text class="sub" x="710" y="174" text-anchor="middle">picks a job, processes it,</text>
-          <text class="sub" x="710" y="188" text-anchor="middle">emits a result. no local state.</text>
+          <rect class="box purple" x="640" y="105" width="180" height="95" rx="12"/>
+          <text class="lbl" x="730" y="136" text-anchor="middle">LangGraph</text>
+          <text class="sub" x="730" y="154" text-anchor="middle">ranker → detail → draft</text>
+          <text class="sub" x="730" y="170" text-anchor="middle">picks a job, processes it,</text>
+          <text class="sub" x="730" y="184" text-anchor="middle">emits a result. no local state.</text>
 
-          <!-- lane 1: tender-jobs, NestJS -> LangGraph -->
-          <path class="edge" stroke="var(--blue)" stroke-width="2" d="M180,157 C 400,140 480,130 620,130" marker-end="url(#a6b)"/>
-          <text class="edge-lbl" x="400" y="118" text-anchor="middle" fill="var(--blue)">① tender-jobs — consumed by LangGraph</text>
+          <!-- the two queues live in the gap BETWEEN the two services -->
+          <path class="edge" d="M225,100 V150 H350" marker-end="url(#a6)"/>
+          <rect class="box blue" x="350" y="125" width="140" height="50" rx="10"/>
+          <text class="lbl" x="420" y="145" text-anchor="middle" style="font-size:12px">tender-jobs</text>
+          <text class="sub" x="420" y="159" text-anchor="middle">queue · producer: NestJS</text>
 
-          <!-- lane 2: tender-results, LangGraph -> NestJS -->
-          <path class="edge" stroke="var(--orange)" stroke-width="2" d="M620,185 C 480,220 300,245 180,227" marker-end="url(#a6o)"/>
-          <text class="edge-lbl new" x="400" y="248" text-anchor="middle">② tender-results — consumed by NestJS</text>
+          <rect class="box new" x="350" y="205" width="140" height="50" rx="10"/>
+          <text class="lbl" x="420" y="225" text-anchor="middle" style="font-size:12px">tender-results</text>
+          <text class="sub" x="420" y="239" text-anchor="middle">queue · consumer: NestJS</text>
+          <text class="badge-new" x="420" y="197" text-anchor="middle">NEW</text>
+
+          <path class="edge" stroke="var(--orange)" stroke-width="2" d="M350,230 H290" marker-end="url(#a6o)"/>
+
+          <!-- lane 1: tender-jobs -> LangGraph -->
+          <path class="edge" stroke="var(--blue)" stroke-width="2" d="M490,150 H640" marker-end="url(#a6b)"/>
+          <text class="edge-lbl" x="565" y="140" text-anchor="middle" fill="var(--blue)">① consumed by LangGraph</text>
+
+          <!-- lane 2: LangGraph -> tender-results -->
+          <path class="edge" stroke="var(--orange)" stroke-width="2" d="M660,200 C 590,235 540,230 490,230" marker-end="url(#a6o)"/>
+          <text class="edge-lbl new" x="565" y="252" text-anchor="middle">② consumed by NestJS</text>
         </svg>
       </div>
       <div class="bullets">
