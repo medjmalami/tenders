@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ZetaBox Tender Pipeline — Architecture Evolution</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/black.min.css" id="theme">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1117;
+  --surface:#161b22;
+  --surface-2:#1c2129;
+  --border:#30363d;
+  --text:#e6edf3;
+  --muted:#8b949e;
+  --green:#3fb950;
+  --orange:#d29922;
+  --red:#f85149;
+  --blue:#58a6ff;
+  --purple:#bc8cff;
+  --mono:'JetBrains Mono', monospace;
+  --sans:'Inter', sans-serif;
+}
+html,body{ background:var(--bg); }
+.reveal{ font-family:var(--sans); color:var(--text); }
+.reveal .slides{ text-align:left; }
+.reveal .slides section{
+  background:var(--bg);
+  padding:40px 64px;
+  height:100%;
+  box-sizing:border-box;
+}
+.reveal h1,.reveal h2,.reveal h3{ font-family:var(--sans); font-weight:800; text-transform:none; letter-spacing:-0.01em; }
+.reveal h1{ font-size:2.6em; }
+.reveal h2{ font-size:1.7em; color:var(--text); }
+.reveal p, .reveal li{ font-family:var(--sans); font-size:0.62em; line-height:1.5; color:var(--text); }
+.reveal ul{ margin-left:0; }
+.reveal li{ margin-bottom:10px; }
+.reveal li::marker{ color:var(--green); }
+
+/* ---------- shared chrome ---------- */
+.breadcrumb{
+  font-family:var(--mono); font-size:0.34em; color:var(--muted);
+  text-transform:uppercase; letter-spacing:0.12em; margin-bottom:6px;
+}
+.tag{
+  display:inline-block; font-family:var(--mono); font-size:0.30em;
+  padding:3px 10px; border-radius:20px; border:1px solid var(--border);
+  color:var(--muted); margin-left:14px; vertical-align:middle;
+}
+.tag.v-major{ color:var(--green); border-color:var(--green); }
+.tag.v-minor{ color:var(--blue); border-color:var(--blue); }
+.commit-msg{
+  font-family:var(--mono); font-size:0.32em; color:var(--orange);
+  margin-top:2px;
+}
+.commit-msg::before{ content:"$ "; color:var(--muted); }
+
+.layout{ display:flex; gap:36px; align-items:flex-start; margin-top:18px; }
+.gitlog{ width:150px; flex:0 0 150px; }
+.gitlog .item{ position:relative; padding-left:22px; padding-bottom:26px; font-family:var(--mono); font-size:0.30em; color:var(--muted); border-left:1px solid var(--border); margin-left:5px; }
+.gitlog .item:last-child{ border-left:1px solid transparent; padding-bottom:0; }
+.gitlog .item::before{ content:""; position:absolute; left:-5px; top:2px; width:9px; height:9px; border-radius:50%; background:var(--surface-2); border:2px solid var(--border); }
+.gitlog .item.active{ color:var(--text); font-weight:700; }
+.gitlog .item.active::before{ background:var(--orange); border-color:var(--orange); }
+.gitlog .item.past::before{ background:var(--green); border-color:var(--green); }
+.main{ flex:1; min-width:0; }
+.diagram-wrap{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px; }
+.bullets{ margin-top:16px; }
+.bullets p.label{ font-family:var(--mono); font-size:0.30em; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin:0 0 4px 0; }
+.bullets .row{ display:flex; gap:28px; margin-top:10px; }
+.bullets .col{ flex:1; }
+.bullets .col p{ margin:0; font-size:0.56em; }
+
+/* svg diagram styling */
+svg .box{ fill:var(--surface-2); stroke:var(--border); stroke-width:1.5; }
+svg .box.blue{ stroke:var(--blue); }
+svg .box.purple{ stroke:var(--purple); }
+svg .box.green{ stroke:var(--green); }
+svg .box.new{ stroke:var(--orange); stroke-width:2.5; stroke-dasharray:5 3; }
+svg .box.faint{ opacity:0.55; }
+svg .lbl{ fill:var(--text); font-family:var(--mono); font-size:14px; font-weight:600; }
+svg .sub{ fill:var(--muted); font-family:var(--mono); font-size:10.5px; }
+svg .edge{ stroke:var(--muted); stroke-width:1.6; fill:none; }
+svg .edge.new{ stroke:var(--orange); stroke-width:2; }
+svg .edge.async{ stroke-dasharray:5 4; stroke:var(--blue); }
+svg .edge.accept{ stroke:var(--green); }
+svg .edge.reject{ stroke:var(--red); }
+svg .edge.unsure{ stroke:var(--orange); }
+svg .edge-lbl{ fill:var(--muted); font-family:var(--mono); font-size:10.5px; }
+svg .edge-lbl.new{ fill:var(--orange); }
+svg .badge-new{ fill:var(--orange); font-family:var(--mono); font-size:9.5px; font-weight:700; }
+svg .pill{ fill:var(--bg); stroke:var(--orange); stroke-width:1; }
+
+.title-slide h1{ font-size:2.2em; max-width:11em; }
+.title-slide .sub{ font-family:var(--mono); color:var(--muted); font-size:0.5em; margin-top:14px; }
+.title-slide .meta{ margin-top:60px; font-family:var(--mono); font-size:0.38em; color:var(--muted); }
+.title-slide .meta b{ color:var(--text); }
+
+.center-note{ text-align:center; font-family:var(--mono); color:var(--muted); font-size:0.5em; }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ============ 1. TITLE ============ -->
+<section class="title-slide">
+  <div class="breadcrumb">ZetaBox — Tender Intelligence Pipeline</div>
+  <h1>From a <span style="color:var(--orange)">setInterval</span> loop to a stateless LangGraph microservice</h1>
+  <div class="sub">Six architecture revisions, one growing problem: more websites, heavier LLM load, tighter hardware budget.</div>
+  <div class="meta">
+    presented by <b>Amine</b> · ZetaBox internship · tender scraping &amp; AI processing pipeline
+  </div>
+</section>
+
+<!-- ============ 2. CONTEXT ============ -->
+<section>
+  <div class="breadcrumb">Context</div>
+  <h2>What the pipeline actually does</h2>
+  <div class="bullets" style="margin-top:28px;">
+    <div class="row">
+      <div class="col">
+        <p class="label">Job</p>
+        <p>Watch tender websites (starting with Tuneps), pull new tenders, decide which ones ZetaBox should bid on, and draft a notification for the CEO.</p>
+      </div>
+      <div class="col">
+        <p class="label">Constant constraint</p>
+        <p>This is not a latency-sensitive product. A tender can take minutes to hours to process. What we optimize for is <b style="color:var(--text)">hardware / infra cost</b>, not speed.</p>
+      </div>
+      <div class="col">
+        <p class="label">What kept changing</p>
+        <p>Every revision below was driven by one of two things: the LLM step (LangGraph) becoming a bottleneck, or the system needing to support more source websites.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ V1 ============ -->
+<section>
+  <div class="breadcrumb">Architecture evolution <span class="tag v-major">v1.0.0</span></div>
+  <h2>v1 — The naive loop</h2>
+  <div class="commit-msg">feat: poll on setInterval, fan out to LangGraph in parallel</div>
+  <div class="layout">
+    <div class="gitlog">
+      <div class="item active">v1 naive loop</div>
+      <div class="item">v2 serial calls</div>
+      <div class="item">v3 lazy fetch</div>
+      <div class="item">v4 add queue</div>
+      <div class="item">v5 multi-site</div>
+      <div class="item">v6 microservice</div>
+    </div>
+    <div class="main">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 900 300" width="100%">
+          <defs><marker id="a1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--muted)"/></marker></defs>
+          <rect class="box blue" x="20" y="30" width="130" height="56" rx="10"/>
+          <text class="lbl" x="85" y="54" text-anchor="middle">setInterval</text>
+          <text class="sub" x="85" y="70" text-anchor="middle">timer trigger</text>
+
+          <path class="edge" d="M150,58 H210" marker-end="url(#a1)"/>
+
+          <rect class="box" x="210" y="30" width="150" height="56" rx="10"/>
+          <text class="lbl" x="285" y="54" text-anchor="middle">Server</text>
+          <text class="sub" x="285" y="70" text-anchor="middle">single Node process</text>
+
+          <path class="edge" d="M360,50 H430" marker-end="url(#a1)"/>
+          <text class="edge-lbl" x="395" y="42" text-anchor="middle">scrape list</text>
+          <path class="edge" d="M430,65 H360" marker-end="url(#a1)"/>
+          <text class="edge-lbl" x="395" y="82" text-anchor="middle">+ every detail page</text>
+
+          <rect class="box" x="430" y="30" width="140" height="56" rx="10"/>
+          <text class="lbl" x="500" y="54" text-anchor="middle">Tuneps</text>
+          <text class="sub" x="500" y="70" text-anchor="middle">source website</text>
+
+          <path class="edge" d="M285,86 V150" marker-end="url(#a1)"/>
+          <text class="edge-lbl" x="330" y="120" text-anchor="middle">Send() × N — all at once</text>
+
+          <rect class="box purple" x="200" y="150" width="180" height="60" rx="10"/>
+          <text class="lbl" x="290" y="176" text-anchor="middle">LangGraph</text>
+          <text class="sub" x="290" y="193" text-anchor="middle">parallel fan-out per tender</text>
+
+          <path class="edge accept" d="M380,180 H470" marker-end="url(#a1)"/>
+          <text class="edge-lbl" x="425" y="172" text-anchor="middle">if accepted</text>
+
+          <rect class="box green" x="470" y="152" width="150" height="56" rx="10"/>
+          <text class="lbl" x="545" y="176" text-anchor="middle">Email → CEO</text>
+          <text class="sub" x="545" y="193" text-anchor="middle">notification</text>
+
+          <path class="edge" d="M285,86 V240" marker-end="url(#a1)"/>
+          <rect class="box" x="215" y="240" width="150" height="50" rx="10"/>
+          <text class="lbl" x="290" y="262" text-anchor="middle">Postgres</text>
+          <text class="sub" x="290" y="277" text-anchor="middle">state / results</text>
+        </svg>
+      </div>
+      <div class="bullets">
+        <div class="row">
+          <div class="col"><p class="label">Stack</p><p>Just a server + a database. Everything runs in one process.</p></div>
+          <div class="col"><p class="label">Problem</p><p>LangGraph gets every tender at once via parallel <code>Send</code> — LLM/API load spikes unpredictably on every tick.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ V2 ============ -->
+<section>
+  <div class="breadcrumb">Architecture evolution <span class="tag v-minor">v1.1.0</span></div>
+  <h2>v2 — Serialize the LangGraph calls</h2>
+  <div class="commit-msg">perf: loop tenders one by one instead of Send() fan-out</div>
+  <div class="layout">
+    <div class="gitlog">
+      <div class="item past">v1 naive loop</div>
+      <div class="item active">v2 serial calls</div>
+      <div class="item">v3 lazy fetch</div>
+      <div class="item">v4 add queue</div>
+      <div class="item">v5 multi-site</div>
+      <div class="item">v6 microservice</div>
+    </div>
+    <div class="main">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 900 300" width="100%">
+          <defs><marker id="a2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--muted)"/></marker></defs>
+          <rect class="box blue faint" x="20" y="30" width="130" height="56" rx="10"/>
+          <text class="lbl" x="85" y="54" text-anchor="middle" opacity="0.6">setInterval</text>
+          <path class="edge" d="M150,58 H210" marker-end="url(#a2)"/>
+          <rect class="box" x="210" y="30" width="150" height="56" rx="10"/>
+          <text class="lbl" x="285" y="54" text-anchor="middle">Server</text>
+          <text class="sub" x="285" y="70" text-anchor="middle">single Node process</text>
+
+          <path class="edge" d="M360,50 H430" marker-end="url(#a2)"/>
+          <text class="edge-lbl" x="395" y="42" text-anchor="middle">scrape list</text>
+          <path class="edge" d="M430,65 H360" marker-end="url(#a2)"/>
+          <text class="edge-lbl" x="395" y="82" text-anchor="middle">+ every detail page</text>
+          <rect class="box faint" x="430" y="30" width="140" height="56" rx="10"/>
+          <text class="lbl" x="500" y="54" text-anchor="middle" opacity="0.6">Tuneps</text>
+
+          <path class="edge new" d="M285,86 V150" marker-end="url(#a2)"/>
+          <text class="edge-lbl new" x="345" y="120" text-anchor="middle">for (tender of list): call() — one at a time</text>
+
+          <rect class="box purple new" x="200" y="150" width="180" height="60" rx="10"/>
+          <text class="lbl" x="290" y="176" text-anchor="middle">LangGraph</text>
+          <text class="sub" x="290" y="193" text-anchor="middle">serial, blocking loop</text>
+          <text class="badge-new" x="290" y="145" text-anchor="middle">CHANGED</text>
+
+          <path class="edge accept" d="M380,180 H470" marker-end="url(#a2)"/>
+          <text class="edge-lbl" x="425" y="172" text-anchor="middle">if accepted</text>
+          <rect class="box green" x="470" y="152" width="150" height="56" rx="10"/>
+          <text class="lbl" x="545" y="176" text-anchor="middle">Email → CEO</text>
+
+          <path class="edge" d="M285,86 V240" marker-end="url(#a2)"/>
+          <rect class="box" x="215" y="240" width="150" height="50" rx="10"/>
+          <text class="lbl" x="290" y="262" text-anchor="middle">Postgres</text>
+        </svg>
+      </div>
+      <div class="bullets">
+        <div class="row">
+          <div class="col"><p class="label">Trade-off</p><p>Higher latency per batch, but predictable, low peak load — the right trade for a non-time-critical workload.</p></div>
+          <div class="col"><p class="label">Problem</p><p>Still fetches every tender's <b style="color:var(--text)">detail page</b> up front, even ones that will obviously get rejected.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ V3 ============ -->
+<section>
+  <div class="breadcrumb">Architecture evolution <span class="tag v-minor">v1.2.0</span></div>
+  <h2>v3 — Lazy detail-page fetch</h2>
+  <div class="commit-msg">perf: move detail-page fetch inside the graph, only when needed</div>
+  <div class="layout">
+    <div class="gitlog">
+      <div class="item past">v1 naive loop</div>
+      <div class="item past">v2 serial calls</div>
+      <div class="item active">v3 lazy fetch</div>
+      <div class="item">v4 add queue</div>
+      <div class="item">v5 multi-site</div>
+      <div class="item">v6 microservice</div>
+    </div>
+    <div class="main">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 900 300" width="100%">
+          <defs><marker id="a3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--muted)"/></marker></defs>
+          <rect class="box blue faint" x="20" y="30" width="130" height="56" rx="10"/>
+          <text class="lbl" x="85" y="54" text-anchor="middle" opacity="0.6">setInterval</text>
+          <path class="edge" d="M150,58 H210" marker-end="url(#a3)"/>
+          <rect class="box" x="210" y="30" width="150" height="56" rx="10"/>
+          <text class="lbl" x="285" y="54" text-anchor="middle">Server</text>
+
+          <path class="edge new" d="M360,58 H430" marker-end="url(#a3)"/>
+          <text class="edge-lbl new" x="395" y="45" text-anchor="middle">scrape LIST only</text>
+          <rect class="box" x="430" y="30" width="140" height="56" rx="10"/>
+          <text class="lbl" x="500" y="54" text-anchor="middle">Tuneps</text>
+
+          <path class="edge" d="M285,86 V150" marker-end="url(#a3)"/>
+          <text class="edge-lbl" x="345" y="120" text-anchor="middle">one tender at a time</text>
+
+          <rect class="box purple" x="190" y="150" width="200" height="60" rx="10"/>
+          <text class="lbl" x="290" y="172" text-anchor="middle">LangGraph</text>
+          <text class="sub" x="290" y="190" text-anchor="middle">detail fetch is now conditional</text>
+
+          <path class="edge new" d="M390,168 H460" marker-end="url(#a3)"/>
+          <text class="edge-lbl new" x="425" y="160" text-anchor="middle">only if unsure</text>
+          <rect class="box new" x="460" y="140" width="150" height="50" rx="10"/>
+          <text class="lbl" x="535" y="163" text-anchor="middle">detail page</text>
+          <text class="badge-new" x="535" y="130" text-anchor="middle">NEW EDGE</text>
+
+          <path class="edge accept" d="M390,195 H610" marker-end="url(#a3)"/>
+          <text class="edge-lbl" x="500" y="220" text-anchor="middle">if accepted</text>
+          <rect class="box green" x="610" y="170" width="150" height="56" rx="10"/>
+          <text class="lbl" x="685" y="194" text-anchor="middle">Email → CEO</text>
+
+          <path class="edge" d="M285,86 V240" marker-end="url(#a3)"/>
+          <rect class="box" x="215" y="240" width="150" height="50" rx="10"/>
+          <text class="lbl" x="290" y="262" text-anchor="middle">Postgres</text>
+        </svg>
+      </div>
+      <div class="bullets">
+        <div class="row">
+          <div class="col"><p class="label">Win</p><p>Clearly-irrelevant tenders never trigger a detail-page scrape at all — saves bandwidth and time.</p></div>
+          <div class="col"><p class="label">Problem</p><p>The server is still <b style="color:var(--text)">blocked</b>, waiting on the full LangGraph run to finish before it can move to the next batch.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ V4 ============ -->
+<section>
+  <div class="breadcrumb">Architecture evolution <span class="tag v-minor">v1.3.0</span></div>
+  <h2>v4 — Decouple with a queue</h2>
+  <div class="commit-msg">feat: server emits tenders to a queue and returns immediately</div>
+  <div class="layout">
+    <div class="gitlog">
+      <div class="item past">v1 naive loop</div>
+      <div class="item past">v2 serial calls</div>
+      <div class="item past">v3 lazy fetch</div>
+      <div class="item active">v4 add queue</div>
+      <div class="item">v5 multi-site</div>
+      <div class="item">v6 microservice</div>
+    </div>
+    <div class="main">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 900 300" width="100%">
+          <defs><marker id="a4" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--muted)"/></marker></defs>
+          <rect class="box blue faint" x="10" y="30" width="120" height="56" rx="10"/>
+          <text class="lbl" x="70" y="54" text-anchor="middle" opacity="0.6">setInterval</text>
+          <path class="edge" d="M130,58 H185" marker-end="url(#a4)"/>
+          <rect class="box" x="185" y="30" width="140" height="56" rx="10"/>
+          <text class="lbl" x="255" y="54" text-anchor="middle">Server</text>
+
+          <path class="edge" d="M325,58 H390" marker-end="url(#a4)"/>
+          <rect class="box" x="390" y="30" width="120" height="56" rx="10"/>
+          <text class="lbl" x="450" y="54" text-anchor="middle">Tuneps</text>
+
+          <path class="edge new" d="M255,86 V140" marker-end="url(#a4)"/>
+          <text class="edge-lbl new" x="315" y="120" text-anchor="middle">push tender &amp; return — no wait</text>
+
+          <rect class="box new" x="175" y="140" width="160" height="55" rx="10"/>
+          <text class="lbl" x="255" y="163" text-anchor="middle">Queue</text>
+          <text class="sub" x="255" y="180" text-anchor="middle">RabbitMQ</text>
+          <text class="badge-new" x="255" y="132" text-anchor="middle">NEW</text>
+
+          <path class="edge async" d="M335,167 H420" marker-end="url(#a4)"/>
+          <text class="edge-lbl" x="378" y="158" text-anchor="middle">pull, one by one</text>
+
+          <rect class="box purple" x="420" y="140" width="180" height="55" rx="10"/>
+          <text class="lbl" x="510" y="163" text-anchor="middle">LangGraph</text>
+          <text class="sub" x="510" y="180" text-anchor="middle">consumer</text>
+
+          <path class="edge accept" d="M600,167 H680" marker-end="url(#a4)"/>
+          <text class="edge-lbl" x="640" y="158" text-anchor="middle">if accepted</text>
+          <rect class="box green" x="680" y="140" width="150" height="55" rx="10"/>
+          <text class="lbl" x="755" y="163" text-anchor="middle">Email → CEO</text>
+
+          <path class="edge" d="M255,86 V240" marker-end="url(#a4)"/>
+          <rect class="box" x="180" y="240" width="150" height="50" rx="10"/>
+          <text class="lbl" x="255" y="262" text-anchor="middle">Postgres</text>
+        </svg>
+      </div>
+      <div class="bullets">
+        <div class="row">
+          <div class="col"><p class="label">Win</p><p>Ingestion speed is now fully decoupled from processing speed — the server never blocks on LangGraph again.</p></div>
+          <div class="col"><p class="label">Problem</p><p>Everything is still built for <b style="color:var(--text)">one website</b>. ZetaBox wants to add more tender sources.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ V5 ============ -->
+<section>
+  <div class="breadcrumb">Architecture evolution <span class="tag v-major">v2.0.0</span></div>
+  <h2>v5 — BullMQ for multi-site scheduling</h2>
+  <div class="commit-msg">feat: one scheduled background job per website</div>
+  <div class="layout">
+    <div class="gitlog">
+      <div class="item past">v1 naive loop</div>
+      <div class="item past">v2 serial calls</div>
+      <div class="item past">v3 lazy fetch</div>
+      <div class="item past">v4 add queue</div>
+      <div class="item active">v5 multi-site</div>
+      <div class="item">v6 microservice</div>
+    </div>
+    <div class="main">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 900 300" width="100%">
+          <defs><marker id="a5" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--muted)"/></marker></defs>
+
+          <rect class="box new" x="10" y="70" width="140" height="55" rx="10"/>
+          <text class="lbl" x="80" y="93" text-anchor="middle">BullMQ</text>
+          <text class="sub" x="80" y="110" text-anchor="middle">scheduled jobs</text>
+          <text class="badge-new" x="80" y="62" text-anchor="middle">NEW · replaces setInterval</text>
+
+          <path class="edge new" d="M150,85 H210" marker-end="url(#a5)"/>
+          <path class="edge new" d="M150,98 H210" marker-end="url(#a5)"/>
+          <path class="edge new" d="M150,111 H210" marker-end="url(#a5)"/>
+
+          <rect class="box faint" x="210" y="20" width="120" height="42" rx="8"/>
+          <text class="lbl" x="270" y="45" text-anchor="middle" style="font-size:12px">Tuneps</text>
+          <rect class="box faint" x="210" y="72" width="120" height="42" rx="8"/>
+          <text class="lbl" x="270" y="97" text-anchor="middle" style="font-size:12px">Site B</text>
+          <rect class="box new" x="210" y="124" width="120" height="42" rx="8"/>
+          <text class="lbl" x="270" y="149" text-anchor="middle" style="font-size:12px">Site C…</text>
+
+          <path class="edge" d="M330,41 H400" marker-end="url(#a5)"/>
+          <path class="edge" d="M330,93 H400" marker-end="url(#a5)"/>
+          <path class="edge" d="M330,145 H400" marker-end="url(#a5)"/>
+          <text class="edge-lbl" x="365" y="115" text-anchor="middle" transform="rotate(0)">scrape each site's list</text>
+
+          <rect class="box" x="400" y="70" width="140" height="55" rx="10"/>
+          <text class="lbl" x="470" y="93" text-anchor="middle">Queue</text>
+          <text class="sub" x="470" y="110" text-anchor="middle">RabbitMQ · shared</text>
+
+          <path class="edge async" d="M540,97 H610" marker-end="url(#a5)"/>
+          <rect class="box purple" x="610" y="70" width="150" height="55" rx="10"/>
+          <text class="lbl" x="685" y="93" text-anchor="middle">LangGraph</text>
+          <text class="sub" x="685" y="110" text-anchor="middle">consumer</text>
+
+          <path class="edge accept" d="M685,125 V175" marker-end="url(#a5)"/>
+          <rect class="box green" x="610" y="175" width="150" height="50" rx="10"/>
+          <text class="lbl" x="685" y="198" text-anchor="middle">Email → CEO</text>
+
+          <path class="edge" d="M80,125 V250" marker-end="url(#a5)"/>
+          <rect class="box" x="10" y="250" width="140" height="45" rx="10"/>
+          <text class="lbl" x="80" y="271" text-anchor="middle">Postgres</text>
+          <text class="sub" x="80" y="286" text-anchor="middle">server writes here too</text>
+        </svg>
+      </div>
+      <div class="bullets">
+        <div class="row">
+          <div class="col"><p class="label">Why BullMQ, not more intervals</p><p>Latency still doesn't matter — priority stays low hardware/infra cost. BullMQ gives per-site scheduling without hardcoding a timer per website.</p></div>
+          <div class="col"><p class="label">New problem</p><p>As sites are added, <b style="color:var(--text)">LangGraph's load grows much faster</b> than everything else — it becomes the clear bottleneck while the rest of the system sits idle.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ V6 ============ -->
+<section>
+  <div class="breadcrumb">Architecture evolution <span class="tag v-major">v3.0.0</span> — current target</div>
+  <h2>v6 — LangGraph as its own microservice</h2>
+  <div class="commit-msg">feat: extract LangGraph into a stateless, independently-scalable service</div>
+  <div class="layout">
+    <div class="gitlog">
+      <div class="item past">v1 naive loop</div>
+      <div class="item past">v2 serial calls</div>
+      <div class="item past">v3 lazy fetch</div>
+      <div class="item past">v4 add queue</div>
+      <div class="item past">v5 multi-site</div>
+      <div class="item active">v6 microservice</div>
+    </div>
+    <div class="main">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 900 300" width="100%">
+          <defs><marker id="a6" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--muted)"/></marker></defs>
+
+          <rect x="10" y="15" width="380" height="270" rx="14" fill="none" stroke="var(--border)" stroke-dasharray="3 4"/>
+          <text class="sub" x="30" y="34">SERVICE 1 · NestJS (sole Postgres writer)</text>
+
+          <rect class="box" x="30" y="50" width="130" height="50" rx="10"/>
+          <text class="lbl" x="95" y="72" text-anchor="middle" style="font-size:12px">BullMQ</text>
+          <text class="sub" x="95" y="87" text-anchor="middle">per-site jobs</text>
+
+          <path class="edge" d="M160,75 H230" marker-end="url(#a6)"/>
+          <rect class="box" x="230" y="50" width="130" height="50" rx="10"/>
+          <text class="lbl" x="295" y="72" text-anchor="middle" style="font-size:12px">Sites A/B/C</text>
+
+          <path class="edge" d="M95,100 V150" marker-end="url(#a6)"/>
+          <rect class="box" x="30" y="150" width="150" height="50" rx="10"/>
+          <text class="lbl" x="105" y="172" text-anchor="middle" style="font-size:12px">tender-jobs</text>
+          <text class="sub" x="105" y="187" text-anchor="middle">queue (out)</text>
+
+          <rect class="box new" x="30" y="215" width="150" height="50" rx="10"/>
+          <text class="lbl" x="105" y="237" text-anchor="middle" style="font-size:12px">tender-results</text>
+          <text class="sub" x="105" y="252" text-anchor="middle">queue (in)</text>
+          <text class="badge-new" x="105" y="207" text-anchor="middle">NEW</text>
+
+          <path class="edge" d="M180,240 H230" marker-end="url(#a6)"/>
+          <rect class="box green" x="230" y="215" width="150" height="50" rx="10"/>
+          <text class="lbl" x="305" y="237" text-anchor="middle" style="font-size:12px">Postgres + digest</text>
+          <text class="sub" x="305" y="252" text-anchor="middle">write · CEO email</text>
+
+          <rect x="420" y="15" width="470" height="270" rx="14" fill="none" stroke="var(--orange)" stroke-dasharray="3 4"/>
+          <text class="sub" x="440" y="34" fill="var(--orange)">SERVICE 2 · LangGraph — stateless, scaled independently</text>
+          <text class="badge-new" x="880" y="34" text-anchor="end">NEW SERVICE</text>
+
+          <path class="edge async" d="M180,175 C 260,175 260,175 440,175" marker-end="url(#a6)"/>
+          <text class="edge-lbl" x="300" y="165" text-anchor="middle">async, over RabbitMQ</text>
+
+          <rect class="box purple" x="460" y="120" width="180" height="110" rx="12"/>
+          <text class="lbl" x="550" y="150" text-anchor="middle">LangGraph</text>
+          <text class="sub" x="550" y="168" text-anchor="middle">ranker → detail → draft</text>
+          <text class="sub" x="550" y="184" text-anchor="middle">picks a job, processes it,</text>
+          <text class="sub" x="550" y="200" text-anchor="middle">emits a result. no local state.</text>
+
+          <path class="edge async" d="M640,175 C 720,175 720,175 780,175" marker-end="url(#a6)"/>
+          <text class="edge-lbl" x="705" y="165" text-anchor="middle">push result</text>
+
+          <path class="edge async" d="M780,175 C 700,235 300,290 105,265" marker-end="url(#a6)"/>
+        </svg>
+      </div>
+      <div class="bullets">
+        <div class="row">
+          <div class="col"><p class="label">Why split</p><p>LangGraph is the only component under real scaling pressure — scale it alone instead of the whole stack.</p></div>
+          <div class="col"><p class="label">Stays async</p><p>Same async communication as before, now with a second queue (<code>tender-results</code>) so LangGraph never needs to know who's consuming it.</p></div>
+          <div class="col"><p class="label">Stateless by design</p><p>LangGraph service holds no state between jobs — easy to run N replicas behind the same queue.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ EVOLUTION SUMMARY ============ -->
+<section>
+  <div class="breadcrumb">Recap</div>
+  <h2>Six revisions, two recurring pressures</h2>
+  <div style="margin-top:26px;">
+    <svg viewBox="0 0 1160 230" width="100%">
+      <line x1="40" y1="60" x2="1120" y2="60" stroke="var(--border)" stroke-width="2"/>
+      <!-- v1 -->
+      <circle cx="80" cy="60" r="7" fill="var(--green)"/>
+      <text class="lbl" x="80" y="40" text-anchor="middle" style="font-size:12px">v1</text>
+      <text class="sub" x="80" y="90" text-anchor="middle">naive loop</text>
+      <text class="sub" x="80" y="104" text-anchor="middle">parallel Send</text>
+      <!-- v2 -->
+      <circle cx="270" cy="60" r="7" fill="var(--green)"/>
+      <text class="lbl" x="270" y="40" text-anchor="middle" style="font-size:12px">v2</text>
+      <text class="sub" x="270" y="90" text-anchor="middle">serial calls</text>
+      <text class="sub" x="270" y="104" text-anchor="middle">cap peak load</text>
+      <!-- v3 -->
+      <circle cx="460" cy="60" r="7" fill="var(--green)"/>
+      <text class="lbl" x="460" y="40" text-anchor="middle" style="font-size:12px">v3</text>
+      <text class="sub" x="460" y="90" text-anchor="middle">lazy fetch</text>
+      <text class="sub" x="460" y="104" text-anchor="middle">skip needless scrapes</text>
+      <!-- v4 -->
+      <circle cx="650" cy="60" r="7" fill="var(--green)"/>
+      <text class="lbl" x="650" y="40" text-anchor="middle" style="font-size:12px">v4</text>
+      <text class="sub" x="650" y="90" text-anchor="middle">add queue</text>
+      <text class="sub" x="650" y="104" text-anchor="middle">decouple ingest / process</text>
+      <!-- v5 -->
+      <circle cx="840" cy="60" r="7" fill="var(--green)"/>
+      <text class="lbl" x="840" y="40" text-anchor="middle" style="font-size:12px">v5</text>
+      <text class="sub" x="840" y="90" text-anchor="middle">BullMQ</text>
+      <text class="sub" x="840" y="104" text-anchor="middle">multi-site scheduling</text>
+      <!-- v6 -->
+      <circle cx="1040" cy="60" r="9" fill="var(--orange)"/>
+      <text class="lbl" x="1040" y="38" text-anchor="middle" style="font-size:13px" fill="var(--orange)">v6</text>
+      <text class="sub" x="1040" y="90" text-anchor="middle" fill="var(--orange)">microservice</text>
+      <text class="sub" x="1040" y="104" text-anchor="middle" fill="var(--orange)">stateless, scales alone</text>
+
+      <rect x="40" y="140" width="510" height="70" rx="10" fill="var(--surface)" stroke="var(--blue)"/>
+      <text class="sub" x="60" y="162" fill="var(--blue)" style="font-size:11px">DRIVER 1 · LLM load pattern (v1 → v2 → v3)</text>
+      <text class="sub" x="60" y="182" style="font-size:11px">how tenders reach LangGraph, and how much work happens before it</text>
+
+      <rect x="610" y="140" width="510" height="70" rx="10" fill="var(--surface)" stroke="var(--purple)"/>
+      <text class="sub" x="630" y="162" fill="var(--purple)" style="font-size:11px">DRIVER 2 · scale &amp; topology (v4 → v5 → v6)</text>
+      <text class="sub" x="630" y="182" style="font-size:11px">decoupling, multi-site support, and isolating the bottleneck</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ============ LANGGRAPH GRAPH ============ -->
+<section>
+  <div class="breadcrumb">Inside Service 2</div>
+  <h2>The LangGraph state graph</h2>
+  <div class="diagram-wrap" style="margin-top:20px;">
+    <svg viewBox="0 0 1000 380" width="100%">
+      <defs><marker id="alg" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="var(--muted)"/></marker></defs>
+
+      <circle cx="70" cy="190" r="34" fill="var(--surface-2)" stroke="var(--text)" stroke-width="1.5"/>
+      <text class="lbl" x="70" y="195" text-anchor="middle" style="font-size:12px">START</text>
+
+      <path class="edge" d="M104,190 H190" marker-end="url(#alg)"/>
+
+      <rect class="box purple" x="190" y="150" width="160" height="80" rx="12"/>
+      <text class="lbl" x="270" y="184" text-anchor="middle">ranker</text>
+      <text class="sub" x="270" y="202" text-anchor="middle">sets status:</text>
+      <text class="sub" x="270" y="215" text-anchor="middle">rejected / unsure / accepted</text>
+
+      <!-- ranker -> END reject -->
+      <path class="edge reject" d="M270,150 C 270,60 500,50 780,80" marker-end="url(#alg)"/>
+      <text class="edge-lbl" x="500" y="55" text-anchor="middle" fill="var(--red)">status = rejected</text>
+
+      <!-- ranker -> getDetailedPage (unsure or accepted) -->
+      <path class="edge unsure" d="M350,195 H460" marker-end="url(#alg)"/>
+      <text class="edge-lbl" x="405" y="187" text-anchor="middle" fill="var(--orange)">unsure / accepted</text>
+
+      <rect class="box new" x="460" y="155" width="180" height="80" rx="12"/>
+      <text class="lbl" x="550" y="188" text-anchor="middle" style="font-size:13px">getDetailedPage</text>
+      <text class="sub" x="550" y="206" text-anchor="middle">fetches full tender page</text>
+      <text class="sub" x="550" y="220" text-anchor="middle">then re-checks status</text>
+
+      <!-- getDetailedPage -> ranker (unsure), loop back -->
+      <path class="edge unsure" d="M540,155 C 480,90 380,90 280,148" marker-end="url(#alg)"/>
+      <text class="edge-lbl" x="400" y="95" text-anchor="middle" fill="var(--orange)">status = unsure → re-rank</text>
+
+      <!-- getDetailedPage -> makeDraft (accepted) -->
+      <path class="edge accept" d="M640,195 H730" marker-end="url(#alg)"/>
+      <text class="edge-lbl" x="685" y="187" text-anchor="middle" fill="var(--green)">status = accepted</text>
+
+      <!-- ranker -> makeDraft direct (2nd pass, now with full data) -->
+      <path class="edge accept" d="M300,230 C 380,320 620,320 730,250" marker-end="url(#alg)"/>
+      <text class="edge-lbl" x="500" y="335" text-anchor="middle" fill="var(--green)">ranker 2nd pass, accepted</text>
+
+      <rect class="box green" x="730" y="175" width="160" height="80" rx="12"/>
+      <text class="lbl" x="810" y="209" text-anchor="middle" style="font-size:13px">makeDraft</text>
+      <text class="sub" x="810" y="227" text-anchor="middle">crafts the CEO email</text>
+
+      <circle cx="890" cy="80" r="34" fill="var(--surface-2)" stroke="var(--text)" stroke-width="1.5"/>
+      <text class="lbl" x="890" y="85" text-anchor="middle" style="font-size:12px">END</text>
+
+      <path class="edge" d="M810,175 C 850,140 870,110 885,112" marker-end="url(#alg)"/>
+
+      <!-- legend -->
+      <g transform="translate(30,320)">
+        <line x1="0" y1="0" x2="26" y2="0" class="edge reject" stroke-width="2.5"/><text class="sub" x="32" y="4">rejected → END</text>
+        <line x1="150" y1="0" x2="176" y2="0" class="edge unsure" stroke-width="2.5"/><text class="sub" x="182" y="4">unsure → loop back to ranker</text>
+        <line x1="420" y1="0" x2="446" y2="0" class="edge accept" stroke-width="2.5"/><text class="sub" x="452" y="4">accepted → draft → END</text>
+      </g>
+    </svg>
+  </div>
+  <p style="margin-top:6px; font-size:0.5em; color:var(--muted);">
+    Status lives on shared graph state. <code style="color:var(--text)">getDetailedPage</code> is only visited when the ranker isn't confident from list data alone — the same lazy-fetch idea from v3, now expressed as a proper conditional edge.
+  </p>
+</section>
+
+<!-- ============ FULL PIPELINE ============ -->
+<section>
+  <div class="breadcrumb">Putting it together</div>
+  <h2>End-to-end pipeline (current target, v6)</h2>
+  <div class="diagram-wrap" style="margin-top:14px;">
+    <svg viewBox="0 0 1180 260" width="100%">
+      <defs><marker id="ap" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--muted)"/></marker></defs>
+
+      <rect class="box" x="10" y="90" width="120" height="55" rx="10"/>
+      <text class="lbl" x="70" y="112" text-anchor="middle" style="font-size:11.5px">BullMQ</text>
+      <text class="sub" x="70" y="128" text-anchor="middle">per-site jobs</text>
+      <path class="edge" d="M130,117 H190" marker-end="url(#ap)"/>
+
+      <rect class="box" x="190" y="90" width="120" height="55" rx="10"/>
+      <text class="lbl" x="250" y="112" text-anchor="middle" style="font-size:11.5px">Scrapers</text>
+      <text class="sub" x="250" y="128" text-anchor="middle">list per site</text>
+      <path class="edge" d="M310,117 H370" marker-end="url(#ap)"/>
+
+      <rect class="box" x="370" y="90" width="130" height="55" rx="10"/>
+      <text class="lbl" x="435" y="112" text-anchor="middle" style="font-size:11.5px">tender-jobs</text>
+      <text class="sub" x="435" y="128" text-anchor="middle">queue</text>
+      <path class="edge async" d="M500,117 H560" marker-end="url(#ap)"/>
+
+      <rect class="box purple" x="560" y="70" width="200" height="95" rx="12"/>
+      <text class="lbl" x="660" y="98" text-anchor="middle" style="font-size:12px">LangGraph service</text>
+      <text class="sub" x="660" y="116" text-anchor="middle">ranker</text>
+      <text class="sub" x="660" y="131" text-anchor="middle">→ getDetailedPage (if unsure)</text>
+      <text class="sub" x="660" y="146" text-anchor="middle">→ makeDraft (if accepted)</text>
+
+      <path class="edge async" d="M760,117 H820" marker-end="url(#ap)"/>
+      <rect class="box" x="820" y="90" width="140" height="55" rx="10"/>
+      <text class="lbl" x="890" y="112" text-anchor="middle" style="font-size:11.5px">tender-results</text>
+      <text class="sub" x="890" y="128" text-anchor="middle">queue</text>
+
+      <path class="edge" d="M960,117 H1020" marker-end="url(#ap)"/>
+      <rect class="box green" x="1020" y="90" width="150" height="55" rx="10"/>
+      <text class="lbl" x="1095" y="112" text-anchor="middle" style="font-size:11.5px">NestJS consumer</text>
+      <text class="sub" x="1095" y="128" text-anchor="middle">writes Postgres</text>
+
+      <path class="edge" d="M1095,145 V200" marker-end="url(#ap)"/>
+      <rect class="box green" x="1000" y="200" width="170" height="45" rx="10"/>
+      <text class="lbl" x="1085" y="227" text-anchor="middle" style="font-size:11.5px">Digest → CEO email</text>
+      <text class="sub" x="990" y="215" text-anchor="end" style="font-size:9.5px">atomic batch-completion check</text>
+    </svg>
+  </div>
+  <div class="bullets">
+    <div class="row">
+      <div class="col"><p class="label">Only writer</p><p>NestJS remains the sole Postgres writer — LangGraph never touches the DB directly.</p></div>
+      <div class="col"><p class="label">Fully async</p><p>Two queues, zero synchronous calls between the scraping side and the AI side.</p></div>
+      <div class="col"><p class="label">Scales where it hurts</p><p>Add replicas of the LangGraph service under load — nothing else needs to change.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CLOSING ============ -->
+<section>
+  <div class="center-note" style="margin-top:22%;">
+    <h2 style="text-align:center;">Questions</h2>
+    <p>Happy to walk through any revision, the queue contracts, or the graph's conditional edges in more depth.</p>
+  </div>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.js"></script>
+<script>
+  Reveal.initialize({
+    width: 1280,
+    height: 720,
+    margin: 0.06,
+    controls: true,
+    progress: true,
+    hash: true,
+    center: false,
+    transition: 'fade',
+    slideNumber: 'c/t'
+  });
+</script>
+</body>
+</html>
