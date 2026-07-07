@@ -12,9 +12,6 @@ export type Project = {
 
 };
 
-/**
- * Represents a single employee returned by the Employees API.
- */
 export type Employee = {
   id: string; // Unique identifier of the employee.
   firstName: string; // Employee's first name.
