@@ -15,6 +15,12 @@ class Project(BaseModel):
     teamMembers: list[str]  # Employee IDs
 
 
+class ProjectSummary(BaseModel):
+    id: str
+    name: str
+    description: str
+
+
 class Employee(BaseModel):
     id: str
     firstName: str
@@ -26,3 +32,10 @@ class Employee(BaseModel):
     isActive: bool
     yearsOfExperience: int
     pastProjectIds: list[str]
+
+
+class EmployeeSummary(BaseModel):
+    id: str
+    position: str
+    skills: list[str]
+    isActive: bool

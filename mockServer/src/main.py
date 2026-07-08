@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, Query
 
 from data import EMPLOYEES, PROJECTS
-from models import Employee, Project
+from models import Employee, EmployeeSummary, Project, ProjectSummary
 
 app = FastAPI(
     title="Tender Data API",
@@ -13,12 +13,10 @@ app = FastAPI(
 
 
 # ---------- Projects ----------
-
-
-@app.get("/projects", response_model=list[Project])
+@app.get("/projects", response_model=list[ProjectSummary])
 def list_projects(
-    status: Optional[str] = Query(
-        None, description="completed | in_progress | planned"
+    q: Optional[str] = Query(
+        None, description="word match in project name or description"
     ),
     technology: Optional[str] = Query(
         None, description="filter by a technology, case-insensitive"
@@ -28,8 +26,16 @@ def list_projects(
     ),
 ):
     results = PROJECTS
-    if status:
-        results = [p for p in results if p.status == status]
+    if q:
+        words = q.lower().split()
+        results = [
+            p
+            for p in results
+            if any(
+                word in p.name.lower() or word in p.description.lower()
+                for word in words
+            )
+        ]
     if technology:
         results = [
             p
@@ -50,15 +56,13 @@ def get_project(project_id: str):
 
 
 # ---------- Employees ----------
-
-
-@app.get("/employees", response_model=list[Employee])
+@app.get("/employees", response_model=list[EmployeeSummary])
 def list_employees(
     skill: Optional[str] = Query(
         None, description="filter by a skill, case-insensitive"
     ),
-    department: Optional[str] = Query(
-        None, description="filter by department, case-insensitive substring"
+    position: Optional[str] = Query(
+        None, description="filter by position, case-insensitive substring"
     ),
     is_active: Optional[bool] = Query(
         None, description="filter by active employment status"
@@ -67,8 +71,8 @@ def list_employees(
     results = EMPLOYEES
     if skill:
         results = [e for e in results if skill.lower() in [s.lower() for s in e.skills]]
-    if department:
-        results = [e for e in results if department.lower() in e.department.lower()]
+    if position:
+        results = [e for e in results if position.lower() in e.position.lower()]
     if is_active is not None:
         results = [e for e in results if e.isActive == is_active]
     return results
