@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+
+# uv
+.venv/
+# Note: DO commit uv.lock — it should NOT be ignored, that's the whole point of it
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+
+# Logs / DB (if you're using sqlite locally for dev)
+*.log
+*.db
+*.sqlite3
+
+# FastAPI/uvicorn specific
+*.pid
