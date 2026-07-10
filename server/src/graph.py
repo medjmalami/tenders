@@ -1,10 +1,11 @@
-from typing import Literal, Optional, TypedDict
+from typing import Annotated, Literal, Optional, TypedDict
 
 import httpx
-from langchain_anthropic import ChatAnthropic
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.tools import tool
+from langchain_ollama import ChatOllama
 from langgraph.graph import END, StateGraph
+from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 
 
@@ -14,14 +15,20 @@ class TenderState(TypedDict):
     tender_description: Optional[str]
     enrichment_data: Optional[dict]
     augmented: bool  # tracks whether augmentation has already run
-    messages: list[BaseMessage]  # drafter's tool-calling scratchpad
+    messages: Annotated[list[BaseMessage], add_messages]
 
+
+# ---------- Ollama LLM ----------
+
+llm = ChatOllama(
+    model="qwen2.5:14b",
+    temperature=0,
+)
 
 # ---------- Ranker ----------
 
 
 def ranker_node(state: TenderState) -> dict:
-    llm = ChatAnthropic(model="claude-sonnet-4-6")
     response = llm.invoke(
         f"Classify this tender as acceptable, rejected, or need_more_data:\n"
         f"{state['tender_raw']}\nDescription so far: {state.get('tender_description')}"
@@ -57,7 +64,6 @@ async def augmentation_node(state: TenderState) -> dict:
         resp1 = await client.get("https://api.example.com/endpoint1", timeout=10)
         resp2 = await client.get("https://api.example.com/endpoint2", timeout=10)
 
-    llm = ChatAnthropic(model="claude-sonnet-4-6")
     description = llm.invoke(
         f"Combine these into a tender description:\n{resp1.json()}\n{resp2.json()}"
     ).content
@@ -92,11 +98,25 @@ def get_project_data(keywords: str) -> dict:
 
 
 tools = [get_employee_data, get_project_data]
-llm_with_tools = ChatAnthropic(model="claude-sonnet-4-6").bind_tools(tools)
+llm_with_tools = llm.bind_tools(tools)
 
 
 def drafter_node(state: TenderState) -> dict:
-    response = llm_with_tools.invoke(state["messages"])
+    messages = state["messages"]
+
+    if not messages:
+        messages = [
+            HumanMessage(
+                content=f"""
+Draft a proposal for this tender:
+
+{state["tender_description"]}
+"""
+            )
+        ]
+
+    response = llm_with_tools.invoke(messages)
+
     return {"messages": [response]}
 
 
