@@ -21,7 +21,7 @@ class TenderState(TypedDict):
 # ---------- Ollama LLM ----------
 
 llm = ChatOllama(
-    model="qwen2.5:14b",
+    model="qwen2.5:7b",
     temperature=0,
 )
 
