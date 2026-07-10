@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from routes import routes
+from routes import mock_routes
 
 app = FastAPI(
     title="Tender Data API",
@@ -8,4 +8,4 @@ app = FastAPI(
     version="1.0.0",
 )
 
-app.include_router(routes.router)
+app.include_router(mock_routes.router)
