@@ -36,7 +36,7 @@ async def fetch_tuneps_tenders_by_date(
 
 async def main():
     # Adjust this date to one you know has published tenders
-    date = "2026-07-06"
+    date = "2026-07-08"
 
     result = await fetch_tuneps_tenders_by_date(date=date, offset=0, limit=10)
 

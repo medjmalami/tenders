@@ -11,7 +11,7 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from pydantic import BaseModel
 
-from helpers import getArticles, getTender
+from src.helpers import getArticles, getTender
 
 TENDER_DATA_API_URL = os.getenv("TENDER_DATA_API_URL", "http://localhost:8000")
 
@@ -218,6 +218,17 @@ async def drafter_node(state: TenderState) -> dict:
 Draft a proposal for this tender:
 
 {state["tender_description"]}
+
+Process:
+1. Call list_employees with NO arguments and list_projects with NO arguments first.
+   This returns the full available data — study it before filtering anything.
+2. From that full list, pick the employees/projects that are actually relevant to
+   the tender. Only call get_employee_details / get_project_details for those specific ids.
+3. Never call list_employees or list_projects with a filter unless the unfiltered
+   result was too large to review directly.
+4. Never call any tool with the same arguments twice.
+5. Never invent an id. Only use ids that appeared in a previous tool result in this
+   conversation.
 """
             )
         ]
