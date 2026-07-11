@@ -7,6 +7,9 @@ from langchain_ollama import ChatOllama
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
+from pydantic import BaseModel
+
+from helpers import getArticles, getTender
 
 
 class TenderState(TypedDict):
@@ -18,6 +21,10 @@ class TenderState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
 
 
+class TenderClassification(BaseModel):
+    classification: Literal["acceptable", "rejected", "need_more_data"]
+
+
 # ---------- Ollama LLM ----------
 
 llm = ChatOllama(
@@ -25,7 +32,21 @@ llm = ChatOllama(
     temperature=0,
 )
 
+
 # ---------- Ranker ----------
+def parse_classification(content: str) -> str:
+    content = content.lower().strip()
+
+    if "acceptable" in content:
+        return "acceptable"
+
+    if "rejected" in content:
+        return "rejected"
+
+    if "need_more_data" in content or "need more data" in content:
+        return "need_more_data"
+
+    raise ValueError(f"Could not parse classification: {content}")
 
 
 def ranker_node(state: TenderState) -> dict:
@@ -33,9 +54,7 @@ def ranker_node(state: TenderState) -> dict:
         f"Classify this tender as acceptable, rejected, or need_more_data:\n"
         f"{state['tender_raw']}\nDescription so far: {state.get('tender_description')}"
     )
-    classification = parse_classification(
-        response.content
-    )  # your parser/structured output
+    classification = parse_classification(str(response.content))
     return {"classification": classification}
 
 
