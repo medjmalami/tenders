@@ -1,6 +1,8 @@
 import asyncio
+import os
 from typing import Annotated, Literal, Optional, TypedDict
 
+import httpx
 from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.tools import tool
 from langchain_ollama import ChatOllama
@@ -10,6 +12,8 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from pydantic import BaseModel
 
 from helpers import getArticles, getTender
+
+TENDER_DATA_API_URL = os.getenv("TENDER_DATA_API_URL", "http://localhost:8000")
 
 
 class TenderState(TypedDict):
@@ -101,26 +105,110 @@ def augmentation_router(state: TenderState) -> str:
     return "ranker"
 
 
-# ---------- Drafter (tool-calling agent) ----------
+# ---------- Tender Data API client ----------
+
+
+async def _get(path: str, params: Optional[dict] = None) -> dict | list | str:
+    params = {k: v for k, v in (params or {}).items() if v is not None}
+    async with httpx.AsyncClient(base_url=TENDER_DATA_API_URL, timeout=10.0) as client:
+        try:
+            response = await client.get(path, params=params)
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                return f"Not found: {path}"
+            return (
+                f"API error {e.response.status_code} calling {path}: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            return f"Failed to reach Tender Data API at {path}: {e}"
+
+
+# ---------- Drafter tools ----------
 
 
 @tool
-def get_employee_data(role: str) -> dict:
-    """Fetch employee data matching a role for the proposal."""
-    ...
+async def list_employees(
+    skill: Optional[str] = None,
+    position: Optional[str] = None,
+    is_active: Optional[bool] = None,
+) -> dict | list | str:
+    """List ZetaBox employees, optionally filtered by skill, position, or active status.
+
+    Use this to find candidate employees to staff a proposal (e.g. matching a
+    required skill like "LangGraph" or a position like "Backend Engineer").
+    Returns summaries only (id, position, skills, isActive) — use get_employee_details
+    with the id to fetch full details for a specific employee.
+
+    Args:
+        skill: filter by a skill, case-insensitive (e.g. "Python")
+        position: filter by position, case-insensitive substring (e.g. "engineer")
+        is_active: filter by active employment status
+    """
+    return await _get(
+        "/employees",
+        {"skill": skill, "position": position, "is_active": is_active},
+    )
 
 
 @tool
-def get_project_data(keywords: str) -> dict:
-    """Fetch past ZetaBox project references matching keywords."""
-    ...
+async def get_employee_details(employee_id: str) -> dict | list | str:
+    """Fetch full details for a single employee by id.
+
+    Use this after list_employees has identified a candidate, to pull complete
+    info (e.g. bio, certifications, experience) needed to write them into a proposal.
+
+    Args:
+        employee_id: the employee's id, as returned by list_employees
+    """
+    return await _get(f"/employees/{employee_id}")
 
 
-tools = [get_employee_data, get_project_data]
+@tool
+async def list_projects(
+    q: Optional[str] = None,
+    technology: Optional[str] = None,
+    client: Optional[str] = None,
+) -> dict | list | str:
+    """List past ZetaBox projects, optionally filtered by keyword, technology, or client.
+
+    Use this to find relevant past project references to cite as proof of experience
+    in a tender proposal. Returns summaries only (id, name, description) — use
+    get_project_details with the id to fetch full details for a specific project.
+
+    Args:
+        q: word match in project name or description (e.g. "water monitoring")
+        technology: filter by a technology, case-insensitive (e.g. "FastAPI")
+        client: filter by client name, case-insensitive substring
+    """
+    return await _get(
+        "/projects",
+        {"q": q, "technology": technology, "client": client},
+    )
+
+
+@tool
+async def get_project_details(project_id: str) -> dict | list | str:
+    """Fetch full details for a single past project by id.
+
+    Use this after list_projects has identified a relevant reference, to pull
+    complete info needed to describe it in a proposal.
+
+    Args:
+        project_id: the project's id, as returned by list_projects
+    """
+    return await _get(f"/projects/{project_id}")
+
+
+tools = [list_employees, get_employee_details, list_projects, get_project_details]
 llm_with_tools = llm.bind_tools(tools)
 
 
-def drafter_node(state: TenderState) -> dict:
+# ---------- Drafter (tool-calling agent) ----------
+
+
+async def drafter_node(state: TenderState) -> dict:
     messages = state["messages"]
 
     if not messages:
@@ -134,7 +222,7 @@ Draft a proposal for this tender:
             )
         ]
 
-    response = llm_with_tools.invoke(messages)
+    response = await llm_with_tools.ainvoke(messages)
 
     return {"messages": [response]}
 

@@ -2,8 +2,8 @@ from typing import Optional
 
 from fastapi import HTTPException, Query
 
-from models import Project, ProjectSummary
-from services import projects_service
+from src.models import Project, ProjectSummary
+from src.services import projects_service
 
 
 def list_projects(

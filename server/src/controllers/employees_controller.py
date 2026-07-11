@@ -2,8 +2,8 @@ from typing import Optional
 
 from fastapi import HTTPException, Query
 
-from models import Employee, EmployeeSummary
-from services import employees_service
+from src.models import Employee, EmployeeSummary
+from src.services import employees_service
 
 
 def list_employees(

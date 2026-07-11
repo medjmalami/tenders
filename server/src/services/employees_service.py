@@ -1,6 +1,6 @@
 from typing import Optional
 
-from data import EMPLOYEES
+from src.data import EMPLOYEES
 
 
 def list_employees(

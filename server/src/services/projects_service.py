@@ -1,6 +1,6 @@
 from typing import Optional
 
-from data import PROJECTS
+from src.data import PROJECTS
 
 
 def list_projects(
