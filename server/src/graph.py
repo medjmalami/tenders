@@ -1,6 +1,6 @@
+import asyncio
 from typing import Annotated, Literal, Optional, TypedDict
 
-import httpx
 from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.tools import tool
 from langchain_ollama import ChatOllama
@@ -65,12 +65,8 @@ def ranker_router(state: TenderState) -> str:
     if c == "rejected":
         return END
     if c == "acceptable":
-        # first pass: still needs enrichment before drafting
-        # second pass (already augmented): go straight to drafter
         return "drafter" if augmented else "augmentation"
-    # need_more_data
     if augmented:
-        # already gathered extra data once, nothing left to fetch
         return END
     return "augmentation"
 
@@ -79,26 +75,30 @@ def ranker_router(state: TenderState) -> str:
 
 
 async def augmentation_node(state: TenderState) -> dict:
-    async with httpx.AsyncClient() as client:
-        resp1 = await client.get("https://api.example.com/endpoint1", timeout=10)
-        resp2 = await client.get("https://api.example.com/endpoint2", timeout=10)
+    tender_raw = state["tender_raw"]
+    bid_master_id = tender_raw["epBidMasterId"]
+    bid_no = tender_raw["bidNo"]
+
+    tender_info, articles = await asyncio.gather(
+        getTender.get_general_info(bid_master_id),
+        getArticles.get_articles(bid_no),
+    )
 
     description = llm.invoke(
-        f"Combine these into a tender description:\n{resp1.json()}\n{resp2.json()}"
+        f"Combine these into a tender description:\n{tender_info}\n{articles}"
     ).content
 
     return {
         "tender_description": description,
-        "enrichment_data": {"call1": resp1.json(), "call2": resp2.json()},
+        "enrichment_data": {"tender_info": tender_info, "articles": articles},
         "augmented": True,
     }
 
 
 def augmentation_router(state: TenderState) -> str:
-    # uses the classification the ranker stored before augmentation ran
     if state["classification"] == "acceptable":
         return "drafter"
-    return "ranker"  # need_more_data -> re-classify with the enriched description
+    return "ranker"
 
 
 # ---------- Drafter (tool-calling agent) ----------
