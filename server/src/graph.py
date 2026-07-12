@@ -640,6 +640,7 @@ async def drafter_node(state: TenderState) -> dict:
             if tender_brief
             else "N/A — Tender Brief not available."
         )
+
         messages = [
             SystemMessage(content=PROPOSAL_DRAFTER_SYSTEM_PROMPT),
             HumanMessage(
@@ -652,7 +653,8 @@ async def drafter_node(state: TenderState) -> dict:
         ]
 
     response = await llm_with_tools.ainvoke(messages)
-    return {"messages": [response]}
+
+    return {"messages": messages + [response]}
 
 
 # ============================================================

@@ -8,7 +8,7 @@ import httpx
 async def fetch_tuneps_tenders_by_date(
     date: str,
     offset: int = 0,
-    limit: int = 10,
+    limit: int = 50,
 ) -> dict[str, Any]:
     url = "https://www.tuneps.tn/api2/portail/bid/master/data"
 
@@ -36,7 +36,7 @@ async def fetch_tuneps_tenders_by_date(
 
 async def main():
     # Adjust this date to one you know has published tenders
-    date = "2026-07-08"
+    date = "2026-06-24"
 
     result = await fetch_tuneps_tenders_by_date(date=date, offset=0, limit=10)
 
