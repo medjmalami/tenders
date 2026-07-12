@@ -5,15 +5,18 @@ import re
 from typing import Annotated, Literal, Optional, TypedDict
 
 import httpx
+from dotenv import load_dotenv
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from langchain_core.tools import tool
-from langchain_ollama import ChatOllama
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from pydantic import BaseModel
 
 from src.helpers import getArticles, getTender
+
+load_dotenv()
 
 TENDER_DATA_API_URL = os.getenv("TENDER_DATA_API_URL", "http://localhost:8000")
 
@@ -325,14 +328,6 @@ Output the proposal as a single well-formatted **Markdown** document (headers \
 per section above, tables for pricing/checklists). Do not wrap the output in \
 JSON. This output is meant to be converted directly to the final submission \
 document (e.g., via a docx generation step), not consumed as pipeline state.
-You are not a chat assistant talking to a user — there is no user here to
-respond to your questions. You must never ask for permission, never offer
-to fetch more details, never end your turn with a question. After you
-retrieve list_employees/list_projects, immediately call get_employee_details
-and get_project_details for the relevant ids, then immediately write the
-full Markdown proposal in the same turn you finish retrieval. Your final
-output must be the complete proposal document with all 7 sections —
-nothing else counts as a valid response.
 """
 
 
@@ -358,9 +353,10 @@ class TenderClassification(BaseModel):
 # LLM
 # ============================================================
 
-llm = ChatOllama(
-    model="qwen2.5:7b",
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
     temperature=0,
+    max_retries=2,
 )
 
 
@@ -648,12 +644,9 @@ async def drafter_node(state: TenderState) -> dict:
             SystemMessage(content=PROPOSAL_DRAFTER_SYSTEM_PROMPT),
             HumanMessage(
                 content=(
-                    "Draft a proposal for this tender. Here is the Tender Brief:\n\n"
-                    f"{brief_json}\n\n"
-                    "Before writing anything, you MUST call list_employees and then "
-                    "list_projects (with no arguments) to retrieve real ZetaBox data. "
-                    "Do not write the Équipe et références or Offre financière sections "
-                    "until you have done so."
+                    "Draft a proposal for this tender. "
+                    "Here is the Tender Brief:\n\n"
+                    f"{brief_json}"
                 )
             ),
         ]
