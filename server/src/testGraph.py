@@ -2,7 +2,7 @@ import asyncio
 from pathlib import Path
 from pprint import pprint
 
-from src.graph import TenderState, graph
+from src.graph.graph import TenderState, graph
 
 initial_state: TenderState = {
     "tender_raw": {
