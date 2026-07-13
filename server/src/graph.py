@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from langchain_core.tools import tool
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_ollama import ChatOllama
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -352,14 +353,18 @@ class TenderClassification(BaseModel):
 # ============================================================
 # LLM
 # ============================================================
+ollama_llm = ChatOllama(
+    model="qwen2.5:7b",
+    temperature=0,
+)
 
-llm = ChatGoogleGenerativeAI(
+google_llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",
     temperature=0,
     max_retries=2,
 )
 
-
+llm = ollama_llm
 # ============================================================
 # Helpers
 # ============================================================
