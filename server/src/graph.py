@@ -17,6 +17,20 @@ from pydantic import BaseModel
 
 from src.helpers import getArticles, getTender
 
+# ── Web search dependencies ──────────────────────────────────
+try:
+    from ddgs import DDGS
+except ImportError:
+    try:
+        from duckduckgo_search import DDGS
+    except ImportError:
+        DDGS = None
+
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    BeautifulSoup = None
+
 load_dotenv()
 
 TENDER_DATA_API_URL = os.getenv("TENDER_DATA_API_URL", "http://localhost:8000")
@@ -217,7 +231,7 @@ own language, unless the Tender Brief indicates the tender is in English.
 tender identification, issuer, timeline, procedure, financials, lots, \
 summary_fr, and parsing_notes.
 
-2. **Retrieval tools** — four tools in a two-tier design:
+2. **Retrieval tools** — six tools in three tiers:
 
    **Index tools** (call these first to discover candidates):
    - `list_employees` — returns all ZetaBox employees with their id, position, \
@@ -233,10 +247,21 @@ summary_fr, and parsing_notes.
    - `get_project_details` — fetches full details for a single past project \
      by id.
 
-3. You do **not** have general web search. If the Tender Brief or retrieved \
-company data doesn't cover something the proposal needs (e.g., specific \
-certifications, legal registration numbers, financial statements), do not \
-invent it — flag it as a placeholder for a human to fill in.
+   **Web tools** (use sparingly for external context the company DB can't \
+   provide):
+   - `web_search` — searches DuckDuckGo. Use to research the tendering \
+     administration (who they are, what they do), specific technical standards \
+     or regulations referenced in the tender, or domain-specific context that \
+     helps you write a more informed proposal. Do NOT use this to search for \
+     ZetaBox's own data — use the internal tools for that.
+   - `fetch_webpage` — fetches and reads the full text of a URL returned by \
+     `web_search`. Always call `web_search` first; never guess a URL.
+
+3. You do **not** have access to ZetaBox's internal databases beyond the \
+tools above. If the Tender Brief or retrieved company data doesn't cover \
+something the proposal needs (e.g., specific certifications, legal \
+registration numbers, financial statements), do not invent it — flag it as a \
+placeholder for a human to fill in.
 
 ## How to use retrieval
 
@@ -252,6 +277,14 @@ unfiltered result was too large to review directly.
 this conversation.
 - Only fetch full detail for projects/employees that are plausibly relevant; \
 don't dump the entire company history into the proposal.
+- **Web search discipline**: Use `web_search` only when the Tender Brief or \
+internal retrieval can't provide something the proposal genuinely needs \
+(e.g., understanding what a referenced standard entails, or learning about \
+the issuing administration's mission and recent projects). Keep web research \
+to 1–3 targeted searches — don't go down research rabbit holes. Never use \
+web search to find ZetaBox's own employees, projects, or capabilities. \
+Always call `web_search` to discover URLs before calling `fetch_webpage`; \
+never pass a guessed URL to `fetch_webpage`.
 - If retrieval returns no relevant past project, say so honestly in the \
 proposal's "Références" section rather than stretching an unrelated project \
 to fit — a Tunisian evaluation committee will penalize obviously irrelevant \
@@ -265,7 +298,7 @@ Produce the proposal with these sections, adapted to what the tender actually \
 requires (a services tender vs. a supply tender will differ slightly — use \
 judgment on inclusion, but never omit sections 1, 2, 6, or 7):
 
-1. **Lettre de soumission** — short cover letter: reference to \
+1. **Lettre de Soumission** — short cover letter: reference to \
 `bid_no` / `reference_no`, tender title, confirms ZetaBox's intent to submit \
 an offer, signed by an authorized representative placeholder.
 2. **Présentation de la société** — ZetaBox identity: what the company does, \
@@ -340,7 +373,7 @@ document (e.g., via a docx generation step), not consumed as pipeline state.
 class TenderState(TypedDict):
     tender_raw: dict
     classification: Optional[Literal["acceptable", "rejected", "need_more_data"]]
-    tender_brief: Optional[dict]  # ← was: tender_description (str)
+    tender_brief: Optional[dict]
     enrichment_data: Optional[dict]
     augmented: bool
     messages: Annotated[list[BaseMessage], add_messages]
@@ -364,7 +397,7 @@ google_llm = ChatGoogleGenerativeAI(
     max_retries=2,
 )
 
-llm = ollama_llm
+llm = google_llm
 # ============================================================
 # Helpers
 # ============================================================
@@ -372,7 +405,6 @@ llm = ollama_llm
 
 def parse_llm_json(content: str | list[str | dict]) -> dict:
     """Parse JSON from LLM output, stripping markdown code fences if present."""
-    # Handle multimodal content format (list of parts)
     if isinstance(content, list):
         text_parts = []
         for part in content:
@@ -386,7 +418,6 @@ def parse_llm_json(content: str | list[str | dict]) -> dict:
 
     text_content = text_content.strip()
 
-    # Strip ```json ... ``` or ``` ... ``` fences
     fence_match = re.match(
         r"^```(?:json)?\s*\n?(.*?)\n?```\s*$", text_content, re.DOTALL
     )
@@ -486,7 +517,6 @@ async def augmentation_node(state: TenderState) -> dict:
         getArticles.get_articles(bid_no),
     )
 
-    # Build the input payload for the Tender Parser
     parser_input = json.dumps(
         {
             "header_payload": tender_info,
@@ -626,7 +656,142 @@ async def get_project_details(project_id: str) -> dict | list | str:
     return await _get(f"/projects/{project_id}")
 
 
-tools = [list_employees, get_employee_details, list_projects, get_project_details]
+# ============================================================
+# Web search & fetch tools (DuckDuckGo)
+# ============================================================
+
+
+def _ddg_search(query: str, max_results: int) -> list[dict]:
+    """Synchronous DuckDuckGo text search — called via asyncio.to_thread."""
+    if DDGS is None:
+        raise ImportError(
+            "Neither 'ddgs' nor 'duckduckgo_search' is installed. Run: pip install ddgs"
+        )
+    ddgs = DDGS()
+    results: list[dict] = []
+    for r in ddgs.text(query, max_results=max_results):
+        results.append(
+            {
+                "title": r.get("title", ""),
+                "url": r.get("href") or r.get("url", ""),
+                "snippet": r.get("body") or r.get("snippet", ""),
+            }
+        )
+    return results
+
+
+@tool
+async def web_search(query: str, max_results: int = 5) -> list[dict] | str:
+    """Search the web using DuckDuckGo.
+
+    Use this to research external context that ZetaBox's internal database
+    cannot provide — e.g. background on the tendering administration, specific
+    technical standards or regulations referenced in the tender, or
+    domain-specific context that helps you write a more informed proposal.
+
+    Do NOT use this to search for ZetaBox's own employees, projects, or
+    capabilities — use list_employees / list_projects for those instead.
+
+    Args:
+        query: the search query string.
+        max_results: maximum number of results to return (default 5, capped at 10).
+    """
+    max_results = min(max(int(max_results), 1), 10)
+    try:
+        results = await asyncio.to_thread(_ddg_search, query, max_results)
+        if not results:
+            return "No search results found."
+        return results
+    except ImportError as e:
+        return str(e)
+    except Exception as e:
+        return f"Web search error: {e}"
+
+
+@tool
+async def fetch_webpage(url: str, max_chars: int = 8000) -> str:
+    """Fetch a web page and return its text content.
+
+    Use this after web_search has returned a relevant URL, to read the full
+    page content. HTML pages are parsed to extract readable text (scripts,
+    styles, navigation, and other non-content elements are removed).
+    Non-HTML content is returned as raw text, truncated to max_chars.
+
+    Always call web_search first to discover URLs — never guess a URL.
+
+    Args:
+        url: the full URL to fetch (must include scheme, e.g. https://...).
+        max_chars: maximum characters of text to return (default 8000).
+    """
+    if BeautifulSoup is None:
+        return "beautifulsoup4 is not installed. Run: pip install beautifulsoup4"
+
+    try:
+        async with httpx.AsyncClient(
+            timeout=15.0,
+            follow_redirects=True,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/120.0.0.0 Safari/537.36"
+                ),
+                "Accept": "text/html,application/xhtml+xml,"
+                "application/xml;q=0.9,text/plain;q=0.8,*/*;q=0.7",
+                "Accept-Language": "fr,en;q=0.8",
+            },
+        ) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+
+            content_type = resp.headers.get("content-type", "").lower()
+
+            if "html" in content_type or "<html" in resp.text[:500].lower():
+                soup = BeautifulSoup(resp.text, "html.parser")
+
+                for tag in soup(
+                    [
+                        "script",
+                        "style",
+                        "nav",
+                        "footer",
+                        "header",
+                        "aside",
+                        "noscript",
+                        "iframe",
+                        "form",
+                        "svg",
+                    ]
+                ):
+                    tag.decompose()
+
+                text = soup.get_text(separator="\n", strip=True)
+
+                lines = [line.strip() for line in text.splitlines() if line.strip()]
+                text = "\n".join(lines)
+            else:
+                text = resp.text
+
+            if len(text) > max_chars:
+                text = text[:max_chars] + "\n\n...[content truncated]"
+            return text
+
+    except httpx.HTTPStatusError as e:
+        return f"HTTP {e.response.status_code} error fetching {url}"
+    except httpx.RequestError as e:
+        return f"Failed to fetch {url}: {e}"
+    except Exception as e:
+        return f"Fetch error: {e}"
+
+
+tools = [
+    list_employees,
+    get_employee_details,
+    list_projects,
+    get_project_details,
+    web_search,
+    fetch_webpage,
+]
 llm_with_tools = llm.bind_tools(tools)
 
 
@@ -636,30 +801,26 @@ llm_with_tools = llm.bind_tools(tools)
 
 
 async def drafter_node(state: TenderState) -> dict:
-    messages = list(state["messages"])
+    existing = state["messages"]
 
-    if not messages:
+    if not existing:
         tender_brief = state.get("tender_brief")
         brief_json = (
             json.dumps(tender_brief, ensure_ascii=False, indent=2)
             if tender_brief
-            else "N/A — Tender Brief not available."
+            else "N/A"
         )
-
-        messages = [
+        new_messages = [
             SystemMessage(content=PROPOSAL_DRAFTER_SYSTEM_PROMPT),
             HumanMessage(
-                content=(
-                    "Draft a proposal for this tender. "
-                    "Here is the Tender Brief:\n\n"
-                    f"{brief_json}"
-                )
+                content=f"Draft a proposal for this tender. Here is the Tender Brief:\n\n{brief_json}"
             ),
         ]
+        response = await llm_with_tools.ainvoke(new_messages)
+        return {"messages": new_messages + [response]}
 
-    response = await llm_with_tools.ainvoke(messages)
-
-    return {"messages": messages + [response]}
+    response = await llm_with_tools.ainvoke(existing)
+    return {"messages": [response]}  # only the new message
 
 
 # ============================================================
