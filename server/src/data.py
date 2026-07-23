@@ -1,4 +1,4 @@
-from src.models import Employee, Project
+from src.models.models import Employee, Project
 
 # NOTE: this is static sample data living in process memory.
 # Swap PROJECTS / EMPLOYEES for a DB-backed repository later without

@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from src.controllers import employees_controller, projects_controller
-from src.models import Employee, EmployeeSummary, Project, ProjectSummary
+from src.models.models import Employee, EmployeeSummary, Project, ProjectSummary
 
 router = APIRouter()
 

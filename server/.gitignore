@@ -36,3 +36,6 @@ htmlcov/
 
 # FastAPI/uvicorn specific
 *.pid
+
+
+postgres-data/

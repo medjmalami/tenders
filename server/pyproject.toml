@@ -5,6 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "alembic>=1.18.5",
+    "asyncpg>=0.31.0",
     "beautifulsoup4>=4.15.0",
     "ddgs>=9.14.4",
     "duckduckgo-search>=8.1.1",
@@ -15,4 +17,5 @@ dependencies = [
     "langchain-ollama>=1.1.0",
     "langgraph>=1.2.9",
     "python-dotenv>=1.2.2",
+    "sqlalchemy[asyncio]>=2.0.51",
 ]

@@ -2,7 +2,7 @@ from typing import Optional
 
 from fastapi import HTTPException, Query
 
-from src.models import Project, ProjectSummary
+from src.models.models import Project, ProjectSummary
 from src.services import projects_service
 
 
