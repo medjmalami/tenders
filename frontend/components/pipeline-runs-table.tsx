@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -72,8 +72,8 @@ export function PipelineRunsTable({ runs }: PipelineRunsTableProps) {
             const startedAtStr = run.startedAt.toLocaleString()
 
             return (
-              <>
-                <TableRow key={`${run.id}-main`} className="hover:bg-muted/50">
+              <Fragment key={run.id}>
+                <TableRow className="hover:bg-muted/50">
                   <TableCell>
                     <Button
                       variant="ghost"
@@ -109,7 +109,7 @@ export function PipelineRunsTable({ runs }: PipelineRunsTableProps) {
 
                 {/* Expandable logs section */}
                 {isExpanded && (
-                  <TableRow key={`${run.id}-logs`} className="bg-muted/30">
+                  <TableRow className="bg-muted/30">
                     <TableCell colSpan={8} className="p-4">
                       <div className="space-y-3">
                         <h4 className="font-semibold text-foreground">Run Logs</h4>
@@ -120,13 +120,12 @@ export function PipelineRunsTable({ runs }: PipelineRunsTableProps) {
                                 {log.timestamp.toLocaleTimeString()}
                               </span>
                               <span
-                                className={`flex-shrink-0 font-semibold ${
-                                  log.level === 'error'
+                                className={`flex-shrink-0 font-semibold ${log.level === 'error'
                                     ? 'text-red-500'
                                     : log.level === 'warning'
                                       ? 'text-amber-500'
                                       : 'text-blue-500'
-                                }`}
+                                  }`}
                               >
                                 [{log.level.toUpperCase()}]
                               </span>
@@ -140,7 +139,7 @@ export function PipelineRunsTable({ runs }: PipelineRunsTableProps) {
                     </TableCell>
                   </TableRow>
                 )}
-              </>
+              </Fragment>
             )
           })}
         </TableBody>
