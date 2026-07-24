@@ -1,6 +1,10 @@
 'use client'
 
+import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, Clock } from 'lucide-react'
 import { Fragment, useState } from 'react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -9,10 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { ChevronDown, ChevronUp, AlertCircle, CheckCircle2, Clock } from 'lucide-react'
 import type { PipelineRun } from '@/lib/types'
 
 interface PipelineRunsTableProps {
@@ -36,17 +36,6 @@ export function PipelineRunsTable({ runs }: PipelineRunsTableProps) {
     }
   }
 
-  const getStatusColor = (status: PipelineRun['status']) => {
-    switch (status) {
-      case 'completed':
-      case 'success':
-        return 'text-green-600'
-      case 'failed':
-        return 'text-red-600'
-      default:
-        return 'text-blue-600'
-    }
-  }
 
   return (
     <Card>
@@ -116,20 +105,20 @@ export function PipelineRunsTable({ runs }: PipelineRunsTableProps) {
                         <div className="space-y-2 max-h-96 overflow-y-auto rounded-lg bg-background p-3 font-mono text-xs">
                           {run.logs.map((log) => (
                             <div key={log.id} className="flex gap-2">
-                              <span className="text-muted-foreground flex-shrink-0">
+                              <span className="text-muted-foreground shrink-0">
                                 {log.timestamp.toLocaleTimeString()}
                               </span>
                               <span
-                                className={`flex-shrink-0 font-semibold ${log.level === 'error'
-                                    ? 'text-red-500'
-                                    : log.level === 'warning'
-                                      ? 'text-amber-500'
-                                      : 'text-blue-500'
+                                className={`shrink-0 font-semibold ${log.level === 'error'
+                                  ? 'text-red-500'
+                                  : log.level === 'warning'
+                                    ? 'text-amber-500'
+                                    : 'text-blue-500'
                                   }`}
                               >
                                 [{log.level.toUpperCase()}]
                               </span>
-                              <span className="text-foreground break-words">
+                              <span className="text-foreground wrap-break-word">
                                 {log.message}
                               </span>
                             </div>

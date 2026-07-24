@@ -6,7 +6,7 @@ import { DashboardStats } from '@/components/dashboard-stats'
 import { TenderFilters, type FilterState } from '@/components/tender-filters'
 import { TenderTable } from '@/components/tender-table'
 import { getTenders } from '@/lib/mock-data'
-import type { Tender, TenderStatus, TenderCategory } from '@/lib/types'
+import type { Tender } from '@/lib/types'
 
 export default function Dashboard() {
   const [filters, setFilters] = useState<FilterState>({
