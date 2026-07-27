@@ -1,53 +1,63 @@
-'use client'
+"use client";
 
-import { useState, useMemo } from 'react'
-import { AppLayout } from '@/components/app-layout'
-import { DashboardStats } from '@/components/dashboard-stats'
-import { TenderFilters, type FilterState } from '@/components/tender-filters'
-import { TenderTable } from '@/components/tender-table'
-import { getAllTenders } from '@/lib/mock-data'
-import type { Tender } from '@/lib/types'
+import { useMemo, useState } from "react";
+import { AppLayout } from "@/components/app-layout";
+import { DashboardStats } from "@/components/dashboard-stats";
+import { type FilterState, TenderFilters } from "@/components/tender-filters";
+import { TenderTable } from "@/components/tender-table";
+import { getAllTenders } from "@/lib/mock-data";
+import type { Tender } from "@/lib/types";
 
 export default function Dashboard() {
   const [filters, setFilters] = useState<FilterState>({
     statuses: [],
-  })
+  });
 
-  const allTenders = getAllTenders()
+  const allTenders = getAllTenders();
 
   // Filter and sort tenders based on active filters
   const filteredTenders = useMemo(() => {
-    let tenders = allTenders.filter((tender: Tender) => {
+    const tenders = allTenders.filter((tender: Tender) => {
       // Status filter
-      if (filters.statuses.length > 0 && !filters.statuses.includes(tender.status)) {
-        return false
+      if (
+        filters.statuses.length > 0 &&
+        !filters.statuses.includes(tender.status)
+      ) {
+        return false;
       }
 
       // Institution filter
       if (filters.institution && tender.institution !== filters.institution) {
-        return false
+        return false;
       }
 
       // Date range filter
       if (filters.dateRange && tender.finalSubmissionDate) {
-        const deadline = new Date(tender.finalSubmissionDate)
-        if (deadline < filters.dateRange.from || deadline > filters.dateRange.to) {
-          return false
+        const deadline = new Date(tender.finalSubmissionDate);
+        if (
+          deadline < filters.dateRange.from ||
+          deadline > filters.dateRange.to
+        ) {
+          return false;
         }
       }
 
-      return true
-    })
+      return true;
+    });
 
     // Sort by deadline (soonest first)
     tenders.sort((a, b) => {
-      const dateA = a.finalSubmissionDate ? new Date(a.finalSubmissionDate).getTime() : Infinity
-      const dateB = b.finalSubmissionDate ? new Date(b.finalSubmissionDate).getTime() : Infinity
-      return dateA - dateB
-    })
+      const dateA = a.finalSubmissionDate
+        ? new Date(a.finalSubmissionDate).getTime()
+        : Infinity;
+      const dateB = b.finalSubmissionDate
+        ? new Date(b.finalSubmissionDate).getTime()
+        : Infinity;
+      return dateA - dateB;
+    });
 
-    return tenders
-  }, [allTenders, filters])
+    return tenders;
+  }, [allTenders, filters]);
 
   return (
     <AppLayout>
@@ -77,11 +87,13 @@ export default function Dashboard() {
             <TenderTable tenders={filteredTenders} />
           ) : (
             <div className="rounded-lg border border-border bg-card p-12 text-center">
-              <p className="text-muted-foreground">No tenders match your filters.</p>
+              <p className="text-muted-foreground">
+                No tenders match your filters.
+              </p>
             </div>
           )}
         </div>
       </div>
     </AppLayout>
-  )
+  );
 }

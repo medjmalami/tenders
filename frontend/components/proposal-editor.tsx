@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { Download, FileDown } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { FileDown, Download } from 'lucide-react'
-import { toast } from 'sonner'
 import type { Tender } from '@/lib/types'
 
 interface ProposalEditorProps {

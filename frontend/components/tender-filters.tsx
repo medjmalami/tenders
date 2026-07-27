@@ -1,6 +1,5 @@
 'use client'
 
-import { X } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
@@ -17,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Slider } from '@/components/ui/slider'
 import { getDistinctInstitutions } from '@/lib/mock-data'
 import type { TenderStatus } from '@/lib/types'
 

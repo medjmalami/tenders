@@ -1,6 +1,9 @@
 'use client'
 
+import { ChevronRight } from 'lucide-react'
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -9,13 +12,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import type { Tender } from '@/lib/types'
+import { getTenderDisplayName as getDisplayName } from '@/lib/types'
 import { StatusBadge } from './status-badge'
 import { UrgentIndicator } from './urgent-indicator'
-import { ChevronRight } from 'lucide-react'
-import type { Tender, getTenderDisplayName } from '@/lib/types'
-import { getTenderDisplayName as getDisplayName } from '@/lib/types'
 
 interface TenderTableProps {
   tenders: Tender[]

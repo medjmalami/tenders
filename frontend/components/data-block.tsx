@@ -35,7 +35,6 @@ export function DataBlock({ data, title, level = 0 }: DataBlockProps) {
     typeof value === 'object' &&
     (Array.isArray(value) || Object.keys(value).length > 0)
 
-  const paddingClass = `pl-${level * 4}`
 
   return (
     <div className={`space-y-2 text-sm ${level > 0 ? 'border-l border-border pl-4 my-2' : ''}`}>

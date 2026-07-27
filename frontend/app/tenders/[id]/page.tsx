@@ -1,18 +1,18 @@
 'use client'
 
-import { use } from 'react'
+import { ArrowLeft, Building2, Calendar } from 'lucide-react'
 import Link from 'next/link'
+import { use } from 'react'
 import { AppLayout } from '@/components/app-layout'
-import { TenderActionBar } from '@/components/tender-action-bar'
-import { StatusBadge } from '@/components/status-badge'
-import { UrgentIndicator } from '@/components/urgent-indicator'
 import { DataBlock } from '@/components/data-block'
+import { StatusBadge } from '@/components/status-badge'
+import { TenderActionBar } from '@/components/tender-action-bar'
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
+import { UrgentIndicator } from '@/components/urgent-indicator'
 import { getTenderById } from '@/lib/mock-data'
 import { getTenderDisplayName } from '@/lib/types'
-import { ArrowLeft, Calendar, Building2 } from 'lucide-react'
 
 interface TenderDetailPageProps {
   params: Promise<{ id: string }>

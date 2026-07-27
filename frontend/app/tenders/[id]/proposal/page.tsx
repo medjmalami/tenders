@@ -1,12 +1,12 @@
 'use client'
 
-import { use } from 'react'
+import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { use } from 'react'
 import { AppLayout } from '@/components/app-layout'
 import { ProposalEditor } from '@/components/proposal-editor'
-import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft } from 'lucide-react'
+import { Card } from '@/components/ui/card'
 import { getTenderById } from '@/lib/mock-data'
 import { getTenderDisplayName } from '@/lib/types'
 
