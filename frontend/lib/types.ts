@@ -1,63 +1,44 @@
 // Tender types
-export type TenderStatus = 'open' | 'closing_soon' | 'closed' | 'awarded'
-export type TenderCategory = 'construction' | 'technology' | 'services' | 'supplies' | 'other'
-export type ProposalStatus = 'draft' | 'submitted' | 'under_review' | 'accepted' | 'rejected'
+export type TenderStatus = 'accepted' | 'rejected' | 'needs_more_data'
 
 export interface Tender {
-  id: string
-  title: string
-  description: string
-  organization: string
+  id: number
+  batchId: number
+  bidNum: string
+  bidMasterNum: string | null
+  bidNameAr: string | null
+  bidNameFr: string | null
+  bidNameEn: string | null
+  scrapedData: Record<string, any> // raw scraped JSON, unstructured
   status: TenderStatus
-  category: TenderCategory
-  budget: number
-  deadline: Date
-  aiRankScore: number // 0-100
-  aiSummary: string
-  aiRecommendation: string
-  submittedProposal?: Proposal
-  createdAt: Date
-  updatedAt: Date
+  datePublished: string | null // date
+  finalSubmissionDate: string | null // date — deadline
+  institution: string | null
+  generalInfo: Record<string, any> | null // unstructured JSONB
+  lotsInfo: Record<string, any> | null // unstructured JSONB
+  llmMergedObject: Record<string, any> | null // unstructured JSONB — AI-enriched/merged data
+  llmSummary: string | null // AI-generated prose summary
+  proposalAiGenerated: string | null // AI-drafted proposal text
+  proposalFinal: string | null // human-edited/final proposal text
+  createdAt: string
+  updatedAt: string
 }
 
-export interface Proposal {
-  id: string
-  tenderId: string
-  status: ProposalStatus
-  content: string
-  submittedAt?: Date
-  reviewedAt?: Date
-  reviewer?: string
-  createdAt: Date
-  updatedAt: Date
-}
-
-export interface PipelineRun {
-  id: string
+export interface Batch {
+  id: number
   runNumber: number
-  status: 'running' | 'success' | 'failed' | 'completed'
-  startedAt: Date
-  completedAt?: Date
-  tenderCount: number
-  successCount: number
-  errorCount: number
-  logs: PipelineLog[]
-}
-
-export interface PipelineLog {
-  id: string
-  runId: string
-  level: 'info' | 'warning' | 'error'
-  message: string
-  timestamp: Date
-  details?: string
-  tenderId?: string
+  tendersFoundCount: number
+  runDate: string
+  targetDate: string
 }
 
 export interface DashboardStats {
   totalTenders: number
-  openTenders: number
-  highScoreTenders: number
-  submittedProposals: number
-  averageScore: number
+  needsMoreDataCount: number
+  dueWithin7Days: number
+  acceptedCount: number
+}
+
+export function getTenderDisplayName(tender: Tender): string {
+  return tender.bidNameFr ?? tender.bidNameEn ?? tender.bidNameAr ?? tender.bidNum
 }

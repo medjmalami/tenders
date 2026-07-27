@@ -7,7 +7,8 @@ import { ProposalEditor } from '@/components/proposal-editor'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
-import { mockProposals, getTenderById } from '@/lib/mock-data'
+import { getTenderById } from '@/lib/mock-data'
+import { getTenderDisplayName } from '@/lib/types'
 
 interface ProposalPageProps {
   params: Promise<{ id: string }>
@@ -15,15 +16,14 @@ interface ProposalPageProps {
 
 export default function ProposalPage({ params }: ProposalPageProps) {
   const { id } = use(params)
-  const proposal = mockProposals.find((p) => p.id === id)
-  const tender = proposal ? getTenderById(proposal.tenderId) : null
+  const tender = getTenderById(parseInt(id))
 
-  if (!proposal || !tender) {
+  if (!tender) {
     return (
       <AppLayout>
         <div className="flex h-full items-center justify-center">
           <Card className="p-8 text-center">
-            <h2 className="text-lg font-semibold text-foreground">Proposal not found</h2>
+            <h2 className="text-lg font-semibold text-foreground">Tender not found</h2>
             <Link href="/">
               <Button className="mt-4">Return to Dashboard</Button>
             </Link>
@@ -45,15 +45,15 @@ export default function ProposalPage({ params }: ProposalPageProps) {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Edit Proposal</h1>
+            <h1 className="text-2xl font-bold text-foreground">Proposal</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {tender.title}
+              {getTenderDisplayName(tender)}
             </p>
           </div>
         </div>
 
         {/* Proposal Editor */}
-        <ProposalEditor proposal={proposal} />
+        <ProposalEditor tender={tender} />
       </div>
     </AppLayout>
   )

@@ -1,23 +1,30 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { FileDown, Download } from 'lucide-react'
 import { toast } from 'sonner'
-import type { Proposal } from '@/lib/types'
+import type { Tender } from '@/lib/types'
 
 interface ProposalEditorProps {
-  proposal?: Proposal
-  readonly?: boolean
+  tender: Tender
 }
 
-export function ProposalEditor({ proposal, readonly = false }: ProposalEditorProps) {
-  const [content, setContent] = useState(proposal?.content || '')
+export function ProposalEditor({ tender }: ProposalEditorProps) {
+  const [finalContent, setFinalContent] = useState(tender.proposalFinal || tender.proposalAiGenerated || '')
+
+  const proposalStatus = useMemo(() => {
+    if (!tender.proposalAiGenerated && !tender.proposalFinal) return 'Not started'
+    if (!tender.proposalFinal) return 'AI draft only'
+    if (tender.proposalFinal === tender.proposalAiGenerated) return 'Matches AI draft'
+    return 'Edited'
+  }, [tender.proposalAiGenerated, tender.proposalFinal])
 
   const handleSave = () => {
-    if (!content.trim()) {
+    if (!finalContent.trim()) {
       toast.error('Proposal content cannot be empty')
       return
     }
@@ -34,59 +41,77 @@ export function ProposalEditor({ proposal, readonly = false }: ProposalEditorPro
 
   return (
     <div className="space-y-6">
-      {/* Editor */}
-      <Card className="p-6">
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Proposal Content</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Write your proposal here. Support for markdown formatting.
-            </p>
-          </div>
+      {/* Status Badge */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-foreground">Proposal</h2>
+        <Badge variant="secondary">{proposalStatus}</Badge>
+      </div>
 
-          <Textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Enter your proposal content here..."
-            className="min-h-96 font-mono"
-            disabled={readonly}
-          />
-        </div>
-      </Card>
-
-      {/* Actions */}
-      {!readonly && (
-        <Card className="bg-blue-50 p-6 dark:bg-blue-950">
+      {/* AI Generated Draft (Read-only) */}
+      {tender.proposalAiGenerated && (
+        <Card className="border-l-4 border-l-blue-500 bg-blue-50 p-6 dark:bg-blue-950">
           <div className="space-y-4">
             <div>
-              <h3 className="font-semibold text-foreground">Save & Export</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Save your work or export in different formats
-              </p>
+              <h3 className="font-semibold text-foreground">AI-Generated Draft</h3>
+              <p className="text-sm text-muted-foreground mt-1">Reference only - original AI draft</p>
             </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Button onClick={handleSave} className="gap-2 bg-green-600 hover:bg-green-700">
-                💾 Save Changes
-              </Button>
-
-              <Button onClick={handleExportPDF} variant="outline" className="gap-2">
-                <FileDown className="h-4 w-4" />
-                Export as PDF
-              </Button>
-
-              <Button onClick={handleExportDOCX} variant="outline" className="gap-2">
-                <Download className="h-4 w-4" />
-                Export as DOCX
-              </Button>
+            <div className="rounded-lg bg-background p-4 text-sm text-muted-foreground whitespace-pre-wrap font-mono text-xs max-h-48 overflow-y-auto">
+              {tender.proposalAiGenerated}
             </div>
           </div>
         </Card>
       )}
 
+      {/* Final Proposal Editor */}
+      <Card className="p-6">
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-semibold text-foreground">Final Proposal</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              {tender.proposalFinal ? 'Edit your proposal' : 'Create your proposal (or start from AI draft)'}
+            </p>
+          </div>
+
+          <Textarea
+            value={finalContent}
+            onChange={(e) => setFinalContent(e.target.value)}
+            placeholder="Enter your final proposal here..."
+            className="min-h-96"
+          />
+        </div>
+      </Card>
+
+      {/* Actions */}
+      <Card className="bg-blue-50 p-6 dark:bg-blue-950">
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-semibold text-foreground">Save & Export</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Save your work or export in different formats
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={handleSave} className="gap-2 bg-green-600 hover:bg-green-700">
+              Save Proposal
+            </Button>
+
+            <Button onClick={handleExportPDF} variant="outline" className="gap-2">
+              <FileDown className="h-4 w-4" />
+              Export as PDF
+            </Button>
+
+            <Button onClick={handleExportDOCX} variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              Export as DOCX
+            </Button>
+          </div>
+        </div>
+      </Card>
+
       {/* Word count */}
       <div className="text-xs text-muted-foreground">
-        {content.split(/\s+/).filter(Boolean).length} words
+        {finalContent.split(/\s+/).filter(Boolean).length} words
       </div>
     </div>
   )

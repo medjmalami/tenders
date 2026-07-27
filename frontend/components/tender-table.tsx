@@ -12,10 +12,10 @@ import {
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from './status-badge'
-import { RankBadge } from './rank-badge'
 import { UrgentIndicator } from './urgent-indicator'
 import { ChevronRight } from 'lucide-react'
-import type { Tender } from '@/lib/types'
+import type { Tender, getTenderDisplayName } from '@/lib/types'
+import { getTenderDisplayName as getDisplayName } from '@/lib/types'
 
 interface TenderTableProps {
   tenders: Tender[]
@@ -27,12 +27,9 @@ export function TenderTable({ tenders }: TenderTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Tender</TableHead>
-            <TableHead>Organization</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead>Budget</TableHead>
+            <TableHead>Tender Name</TableHead>
+            <TableHead>Institution</TableHead>
             <TableHead>Deadline</TableHead>
-            <TableHead className="text-center">Score</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="w-12"></TableHead>
           </TableRow>
@@ -41,28 +38,17 @@ export function TenderTable({ tenders }: TenderTableProps) {
           {tenders.map((tender) => (
             <TableRow key={tender.id} className="hover:bg-muted/50">
               <TableCell>
-                <div className="font-medium text-foreground">{tender.title}</div>
-                <div className="text-xs text-muted-foreground">{tender.id}</div>
+                <div className="font-medium text-foreground">{getDisplayName(tender)}</div>
+                <div className="text-xs text-muted-foreground">{tender.bidNum}</div>
               </TableCell>
-              <TableCell className="text-sm text-muted-foreground">{tender.organization}</TableCell>
-              <TableCell>
-                <span className="inline-block rounded-full bg-muted px-2 py-1 text-xs capitalize text-muted-foreground">
-                  {tender.category}
-                </span>
-              </TableCell>
-              <TableCell className="font-medium text-foreground">
-                ${(tender.budget / 1000).toFixed(0)}k
-              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">{tender.institution}</TableCell>
               <TableCell>
                 <div className="space-y-1">
                   <div className="text-sm text-foreground">
-                    {tender.deadline.toLocaleDateString()}
+                    {tender.finalSubmissionDate ? new Date(tender.finalSubmissionDate).toLocaleDateString() : '—'}
                   </div>
-                  <UrgentIndicator deadline={tender.deadline} />
+                  {tender.finalSubmissionDate && <UrgentIndicator deadline={new Date(tender.finalSubmissionDate)} />}
                 </div>
-              </TableCell>
-              <TableCell className="text-center">
-                <RankBadge score={tender.aiRankScore} />
               </TableCell>
               <TableCell>
                 <StatusBadge status={tender.status} />

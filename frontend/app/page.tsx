@@ -5,47 +5,48 @@ import { AppLayout } from '@/components/app-layout'
 import { DashboardStats } from '@/components/dashboard-stats'
 import { TenderFilters, type FilterState } from '@/components/tender-filters'
 import { TenderTable } from '@/components/tender-table'
-import { getTenders } from '@/lib/mock-data'
+import { getAllTenders } from '@/lib/mock-data'
 import type { Tender } from '@/lib/types'
 
 export default function Dashboard() {
   const [filters, setFilters] = useState<FilterState>({
-    statuses: ['open', 'closing_soon'],
-    scoreMin: 0,
+    statuses: [],
   })
 
-  const allTenders = getTenders()
+  const allTenders = getAllTenders()
 
-  // Filter tenders based on active filters
+  // Filter and sort tenders based on active filters
   const filteredTenders = useMemo(() => {
-    return allTenders.filter((tender: Tender) => {
+    let tenders = allTenders.filter((tender: Tender) => {
       // Status filter
-      if (!filters.statuses.includes(tender.status)) {
+      if (filters.statuses.length > 0 && !filters.statuses.includes(tender.status)) {
         return false
       }
 
-      // Category filter
-      if (filters.category && tender.category !== filters.category) {
-        return false
-      }
-
-      // Score filter
-      if (tender.aiRankScore < filters.scoreMin) {
+      // Institution filter
+      if (filters.institution && tender.institution !== filters.institution) {
         return false
       }
 
       // Date range filter
-      if (filters.dateRange) {
-        if (
-          tender.deadline < filters.dateRange.from ||
-          tender.deadline > filters.dateRange.to
-        ) {
+      if (filters.dateRange && tender.finalSubmissionDate) {
+        const deadline = new Date(tender.finalSubmissionDate)
+        if (deadline < filters.dateRange.from || deadline > filters.dateRange.to) {
           return false
         }
       }
 
       return true
     })
+
+    // Sort by deadline (soonest first)
+    tenders.sort((a, b) => {
+      const dateA = a.finalSubmissionDate ? new Date(a.finalSubmissionDate).getTime() : Infinity
+      const dateB = b.finalSubmissionDate ? new Date(b.finalSubmissionDate).getTime() : Infinity
+      return dateA - dateB
+    })
+
+    return tenders
   }, [allTenders, filters])
 
   return (

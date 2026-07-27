@@ -18,7 +18,8 @@ import {
 } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { X } from 'lucide-react'
-import type { TenderCategory, TenderStatus } from '@/lib/types'
+import type { TenderStatus } from '@/lib/types'
+import { getDistinctInstitutions } from '@/lib/mock-data'
 
 interface TenderFiltersProps {
   onFiltersChange?: (filters: FilterState) => void
@@ -26,18 +27,16 @@ interface TenderFiltersProps {
 
 export interface FilterState {
   statuses: TenderStatus[]
-  category?: TenderCategory
-  scoreMin: number
+  institution?: string
   dateRange?: { from: Date; to: Date }
 }
 
-const statusOptions: TenderStatus[] = ['open', 'closing_soon', 'closed', 'awarded']
-const categoryOptions: TenderCategory[] = ['construction', 'technology', 'services', 'supplies', 'other']
+const statusOptions: TenderStatus[] = ['accepted', 'rejected', 'needs_more_data']
 
 export function TenderFilters({ onFiltersChange }: TenderFiltersProps) {
+  const institutions = getDistinctInstitutions()
   const [filters, setFilters] = useState<FilterState>({
-    statuses: ['open', 'closing_soon'],
-    scoreMin: 0,
+    statuses: [],
   })
 
   const [showDatePicker, setShowDatePicker] = useState(false)
@@ -54,17 +53,11 @@ export function TenderFilters({ onFiltersChange }: TenderFiltersProps) {
     onFiltersChange?.(newFilters)
   }
 
-  const handleCategoryChange = (category: string) => {
+  const handleInstitutionChange = (institution: string) => {
     const newFilters = {
       ...filters,
-      category: category === 'all' ? undefined : (category as TenderCategory),
+      institution: institution === 'all' ? undefined : institution,
     }
-    setFilters(newFilters)
-    onFiltersChange?.(newFilters)
-  }
-
-  const handleScoreChange = (value: number[]) => {
-    const newFilters = { ...filters, scoreMin: value[0] }
     setFilters(newFilters)
     onFiltersChange?.(newFilters)
   }
@@ -80,8 +73,7 @@ export function TenderFilters({ onFiltersChange }: TenderFiltersProps) {
 
   const handleClearFilters = () => {
     const newFilters: FilterState = {
-      statuses: ['open', 'closing_soon'],
-      scoreMin: 0,
+      statuses: [],
     }
     setFilters(newFilters)
     setDateFrom(undefined)
@@ -92,7 +84,7 @@ export function TenderFilters({ onFiltersChange }: TenderFiltersProps) {
   return (
     <Card className="p-6">
       <div className="space-y-6">
-        <div className="grid grid-cols-4 gap-6">
+        <div className="grid grid-cols-3 gap-6">
           {/* Status Multi-select */}
           <div>
             <label className="text-sm font-medium text-foreground">Status</label>
@@ -113,38 +105,22 @@ export function TenderFilters({ onFiltersChange }: TenderFiltersProps) {
             </div>
           </div>
 
-          {/* Category Select */}
+          {/* Institution Select */}
           <div>
-            <label className="text-sm font-medium text-foreground">Category</label>
-            <Select defaultValue="all" onValueChange={handleCategoryChange}>
+            <label className="text-sm font-medium text-foreground">Institution</label>
+            <Select defaultValue="all" onValueChange={handleInstitutionChange}>
               <SelectTrigger className="mt-2">
-                <SelectValue placeholder="All categories" />
+                <SelectValue placeholder="All institutions" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categoryOptions.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                <SelectItem value="all">All Institutions</SelectItem>
+                {institutions.map((inst) => (
+                  <SelectItem key={inst} value={inst}>
+                    {inst}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          {/* Score Slider */}
-          <div>
-            <label className="text-sm font-medium text-foreground">Min AI Score</label>
-            <div className="mt-4">
-              <Slider
-                min={0}
-                max={100}
-                step={5}
-                value={[filters.scoreMin]}
-                onValueChange={handleScoreChange}
-                className="w-full"
-              />
-              <div className="mt-2 text-sm text-muted-foreground">{filters.scoreMin}+</div>
-            </div>
           </div>
 
           {/* Date Range Picker */}

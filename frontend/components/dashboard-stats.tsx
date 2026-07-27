@@ -13,21 +13,21 @@ export function DashboardStats() {
       </Card>
 
       <Card className="p-6">
-        <div className="text-sm text-muted-foreground">Open Tenders</div>
-        <div className="mt-2 text-3xl font-bold text-foreground">{stats.openTenders}</div>
-        <div className="mt-1 text-xs text-muted-foreground">Available now</div>
+        <div className="text-sm text-muted-foreground">Needs More Data</div>
+        <div className="mt-2 text-3xl font-bold text-foreground">{stats.needsMoreDataCount}</div>
+        <div className="mt-1 text-xs text-muted-foreground">Awaiting review</div>
       </Card>
 
       <Card className="p-6">
-        <div className="text-sm text-muted-foreground">High Score</div>
-        <div className="mt-2 text-3xl font-bold text-foreground">{stats.highScoreTenders}</div>
-        <div className="mt-1 text-xs text-muted-foreground">Score ≥ 75</div>
+        <div className="text-sm text-muted-foreground">Due Within 7 Days</div>
+        <div className="mt-2 text-3xl font-bold text-foreground">{stats.dueWithin7Days}</div>
+        <div className="mt-1 text-xs text-muted-foreground">Deadline approaching</div>
       </Card>
 
       <Card className="p-6">
-        <div className="text-sm text-muted-foreground">Avg. AI Score</div>
-        <div className="mt-2 text-3xl font-bold text-foreground">{stats.averageScore}</div>
-        <div className="mt-1 text-xs text-muted-foreground">Out of 100</div>
+        <div className="text-sm text-muted-foreground">Accepted</div>
+        <div className="mt-2 text-3xl font-bold text-foreground">{stats.acceptedCount}</div>
+        <div className="mt-1 text-xs text-muted-foreground">Approved tenders</div>
       </Card>
     </div>
   )

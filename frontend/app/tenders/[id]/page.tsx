@@ -4,14 +4,15 @@ import { use } from 'react'
 import Link from 'next/link'
 import { AppLayout } from '@/components/app-layout'
 import { TenderActionBar } from '@/components/tender-action-bar'
-import { TenderAIAnalysis } from '@/components/tender-ai-analysis'
 import { StatusBadge } from '@/components/status-badge'
 import { UrgentIndicator } from '@/components/urgent-indicator'
+import { DataBlock } from '@/components/data-block'
 import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { getTenderById } from '@/lib/mock-data'
-import { ArrowLeft, Calendar, DollarSign, Building2, FileText } from 'lucide-react'
+import { getTenderDisplayName } from '@/lib/types'
+import { ArrowLeft, Calendar, Building2 } from 'lucide-react'
 
 interface TenderDetailPageProps {
   params: Promise<{ id: string }>
@@ -19,7 +20,7 @@ interface TenderDetailPageProps {
 
 export default function TenderDetailPage({ params }: TenderDetailPageProps) {
   const { id } = use(params)
-  const tender = getTenderById(id)
+  const tender = getTenderById(parseInt(id))
 
   if (!tender) {
     return (
@@ -37,6 +38,8 @@ export default function TenderDetailPage({ params }: TenderDetailPageProps) {
     )
   }
 
+  const displayName = getTenderDisplayName(tender)
+
   return (
     <AppLayout>
       <div className="space-y-8 p-8">
@@ -50,32 +53,32 @@ export default function TenderDetailPage({ params }: TenderDetailPageProps) {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">{tender.title}</h1>
-              <p className="text-sm text-muted-foreground mt-1">{tender.id}</p>
+              <h1 className="text-2xl font-bold text-foreground">{displayName}</h1>
+              <p className="text-sm text-muted-foreground mt-1">{tender.bidNum}</p>
             </div>
           </div>
           <StatusBadge status={tender.status} />
         </div>
 
         {/* Overview Cards */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <Card className="p-4">
             <div className="flex items-center gap-3">
               <Building2 className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-xs text-muted-foreground">Organization</p>
-                <p className="font-medium text-foreground">{tender.organization}</p>
+                <p className="text-xs text-muted-foreground">Institution</p>
+                <p className="font-medium text-foreground">{tender.institution || '—'}</p>
               </div>
             </div>
           </Card>
 
           <Card className="p-4">
             <div className="flex items-center gap-3">
-              <DollarSign className="h-5 w-5 text-muted-foreground" />
+              <Calendar className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-xs text-muted-foreground">Budget</p>
+                <p className="text-xs text-muted-foreground">Published</p>
                 <p className="font-medium text-foreground">
-                  ${(tender.budget / 1000).toFixed(0)}k
+                  {tender.datePublished ? new Date(tender.datePublished).toLocaleDateString() : '—'}
                 </p>
               </div>
             </div>
@@ -87,19 +90,7 @@ export default function TenderDetailPage({ params }: TenderDetailPageProps) {
               <div>
                 <p className="text-xs text-muted-foreground">Deadline</p>
                 <p className="font-medium text-foreground">
-                  {tender.deadline.toLocaleDateString()}
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <FileText className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Category</p>
-                <p className="font-medium text-foreground capitalize">
-                  {tender.category}
+                  {tender.finalSubmissionDate ? new Date(tender.finalSubmissionDate).toLocaleDateString() : '—'}
                 </p>
               </div>
             </div>
@@ -107,62 +98,79 @@ export default function TenderDetailPage({ params }: TenderDetailPageProps) {
         </div>
 
         {/* Urgent indicator */}
-        <UrgentIndicator deadline={tender.deadline} />
+        {tender.finalSubmissionDate && <UrgentIndicator deadline={new Date(tender.finalSubmissionDate)} />}
 
         {/* Main content tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="analysis">AI Analysis</TabsTrigger>
-            <TabsTrigger value="proposal">Proposal</TabsTrigger>
+            <TabsTrigger value="ai-summary">AI Summary</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
-            <Card className="p-6">
-              <h2 className="text-lg font-semibold text-foreground">Description</h2>
-              <p className="mt-4 whitespace-pre-wrap text-sm text-muted-foreground">
-                {tender.description}
-              </p>
-            </Card>
+            {tender.generalInfo && (
+              <Card className="p-6">
+                <DataBlock data={tender.generalInfo} title="General Information" />
+              </Card>
+            )}
+
+            {tender.lotsInfo && (
+              <Card className="p-6">
+                <DataBlock data={tender.lotsInfo} title="Lots Information" />
+              </Card>
+            )}
+
+            {tender.scrapedData && (
+              <Card className="p-6">
+                <details className="cursor-pointer">
+                  <summary className="font-semibold text-foreground hover:text-primary">
+                    Raw Scraped Data
+                  </summary>
+                  <div className="mt-4">
+                    <DataBlock data={tender.scrapedData} />
+                  </div>
+                </details>
+              </Card>
+            )}
 
             {/* Action Bar */}
-            <TenderActionBar />
+            <TenderActionBar tender={tender} />
           </TabsContent>
 
-          {/* Analysis Tab */}
-          <TabsContent value="analysis">
-            <TenderAIAnalysis tender={tender} />
-          </TabsContent>
+          {/* AI Summary Tab */}
+          <TabsContent value="ai-summary" className="space-y-6">
+            {tender.llmSummary && (
+              <Card className="p-6">
+                <h2 className="text-lg font-semibold text-foreground mb-4">AI Summary</h2>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {tender.llmSummary}
+                </p>
+              </Card>
+            )}
 
-          {/* Proposal Tab */}
-          <TabsContent value="proposal">
+            {tender.llmMergedObject && (
+              <Card className="p-6">
+                <DataBlock data={tender.llmMergedObject} title="AI-Enriched Data" />
+              </Card>
+            )}
+
+            {/* Proposal Link Card */}
             <Card className="p-6">
-              {tender.submittedProposal ? (
+              <h2 className="text-lg font-semibold text-foreground mb-4">Proposal</h2>
+              {tender.proposalAiGenerated || tender.proposalFinal ? (
                 <div className="space-y-4">
-                  <div>
-                    <h2 className="text-lg font-semibold text-foreground">
-                      Submitted Proposal
-                    </h2>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Submitted on {tender.submittedProposal.submittedAt?.toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-muted/50 p-4">
-                    <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                      {tender.submittedProposal.content}
-                    </p>
-                  </div>
-                  <Link href={`/proposals/${tender.submittedProposal.id}`}>
-                    <Button>Edit Proposal</Button>
+                  <p className="text-sm text-muted-foreground">
+                    {tender.proposalFinal ? 'Proposal has been drafted.' : 'AI-generated draft available.'}
+                  </p>
+                  <Link href={`/tenders/${tender.id}/proposal`}>
+                    <Button>View Proposal</Button>
                   </Link>
                 </div>
               ) : (
-                <div className="py-8 text-center">
-                  <p className="text-muted-foreground">No proposal submitted yet</p>
-                  <Link href={`/proposals/new?tenderId=${tender.id}`}>
-                    <Button className="mt-4">Create Proposal</Button>
-                  </Link>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">No proposal generated yet.</p>
+                  <Button disabled>Generate Proposal</Button>
                 </div>
               )}
             </Card>

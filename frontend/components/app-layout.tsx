@@ -1,8 +1,8 @@
 'use client'
 
-import { BarChart3, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { BarChart3, FileText, Zap, Settings } from 'lucide-react'
 
 const navItems = [
   {
@@ -36,10 +36,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                  }`}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
               >
                 <Icon className="h-4 w-4" />
                 {item.label}
@@ -47,6 +48,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             )
           })}
         </nav>
+
+        {/* Settings section */}
+        <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-card p-4">
+          <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+            <Settings className="h-4 w-4" />
+            Settings
+          </button>
+        </div>
       </aside>
 
       {/* Main content */}

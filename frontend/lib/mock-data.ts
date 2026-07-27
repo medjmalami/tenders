@@ -1,291 +1,335 @@
-import {
-  Tender,
-  Proposal,
-  PipelineRun,
-  DashboardStats,
-  TenderStatus,
-  TenderCategory,
-  ProposalStatus,
-  PipelineLog,
-} from './types'
+import { Tender, Batch, DashboardStats } from './types'
 
-// Helper to generate random dates
-function getRandomDate(daysOffset: number) {
-  const date = new Date()
-  date.setDate(date.getDate() + daysOffset)
-  return date
+// Helper to generate dates
+function addDays(date: Date, days: number): string {
+  const result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result.toISOString().split('T')[0]
 }
 
-// Mock tender data
+const today = new Date()
+
+// Mock tender data - Tunisian public tender context
 export const mockTenders: Tender[] = [
   {
-    id: 'tender-001',
-    title: 'City Hall HVAC System Upgrade',
-    description:
-      'Full replacement of HVAC systems in municipal building including ductwork, units, and controls.',
-    organization: 'City of Springfield',
-    status: 'closing_soon',
-    category: 'construction',
-    budget: 250000,
-    deadline: getRandomDate(2),
-    aiRankScore: 87,
-    aiSummary: 'Strong fit - our experience with municipal HVAC projects is excellent.',
-    aiRecommendation: 'RECOMMEND - High margin potential, familiar scope, established client.',
-    submittedProposal: {
-      id: 'prop-001',
-      tenderId: 'tender-001',
-      status: 'submitted',
-      content: 'We propose a phased approach...',
-      submittedAt: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    id: 1,
+    batchId: 1,
+    bidNum: 'APP-2025-001',
+    bidMasterNum: 'MASTER-2025-001',
+    bidNameFr: 'Appel d\'offre pour rénovation de route municipale',
+    bidNameEn: 'Call for Tender - Municipal Road Renovation',
+    bidNameAr: null,
+    scrapedData: {
+      source: 'tunisie-appels-offres.gov.tn',
+      scraped_date: '2025-01-15',
+      raw_content: '...',
     },
-    createdAt: new Date('2025-01-10'),
-    updatedAt: new Date('2025-01-15'),
+    status: 'needs_more_data',
+    datePublished: '2025-01-10',
+    finalSubmissionDate: addDays(today, 3),
+    institution: 'Municipalité de Tunis',
+    generalInfo: {
+      budget_estimated: '150 000 TND',
+      duration_months: '6',
+      location: 'Tunis Centre',
+      contact_email: 'appels@tunis.gov.tn',
+    },
+    lotsInfo: {
+      lot_1: {
+        description: 'Préparation et terrassement',
+        quantity: '5 km',
+        unit_price: '10000 TND/km',
+      },
+      lot_2: {
+        description: 'Asphalte et finition',
+        quantity: '5 km',
+        unit_price: '20000 TND/km',
+      },
+    },
+    llmMergedObject: {
+      project_type: 'Infrastructure',
+      estimated_total: '150000 TND',
+      key_requirements: ['Road resurfacing', 'Traffic management', 'Environmental compliance'],
+    },
+    llmSummary: 'Municipal road renovation project in central Tunis spanning 5km. Estimated budget 150,000 TND. Requires phased approach for traffic management.',
+    proposalAiGenerated: null,
+    proposalFinal: null,
+    createdAt: '2025-01-10T10:00:00Z',
+    updatedAt: '2025-01-15T14:30:00Z',
   },
   {
-    id: 'tender-002',
-    title: 'County Data Center Network Infrastructure',
-    description: 'Supply and installation of enterprise networking equipment and fiber backbone.',
-    organization: 'County IT Department',
-    status: 'open',
-    category: 'technology',
-    budget: 450000,
-    deadline: getRandomDate(10),
-    aiRankScore: 72,
-    aiSummary: 'Moderate fit - requires certified specialists on fiber optics installation.',
-    aiRecommendation: 'CONSIDER - Solid opportunity but tight timeline for this scope.',
-    createdAt: new Date('2025-01-12'),
-    updatedAt: new Date('2025-01-15'),
+    id: 2,
+    batchId: 1,
+    bidNum: 'APP-2025-002',
+    bidMasterNum: 'MASTER-2025-002',
+    bidNameFr: 'Appel d\'offre pour équipement informatique',
+    bidNameEn: 'Call for Tender - IT Equipment Supply',
+    bidNameAr: null,
+    scrapedData: {
+      source: 'tunisie-appels-offres.gov.tn',
+      scraped_date: '2025-01-15',
+      raw_content: '...',
+    },
+    status: 'accepted',
+    datePublished: '2025-01-12',
+    finalSubmissionDate: addDays(today, 8),
+    institution: 'Ministère de l\'Éducation',
+    generalInfo: {
+      budget_estimated: '500 000 TND',
+      duration_months: '3',
+      location: 'Tunis',
+      contact_phone: '+216 71 123 456',
+    },
+    lotsInfo: {
+      computers: {
+        quantity: '100 units',
+        specifications: 'Intel i7, 16GB RAM, 512GB SSD',
+        unit_price: '2000 TND',
+      },
+      peripherals: {
+        quantity: '100 sets',
+        specifications: 'Keyboard, mouse, monitor',
+        unit_price: '500 TND',
+      },
+    },
+    llmMergedObject: {
+      project_type: 'Technology',
+      estimated_total: '250000 TND',
+      timeline: '2-3 months',
+      key_requirements: ['Warranty 3 years', 'Local supplier preferred', 'Standard IT configuration'],
+    },
+    llmSummary: 'Supply of 100 complete computer workstations with peripherals for Ministry of Education. Budget 500,000 TND. Preference for local suppliers with 3-year warranty.',
+    proposalAiGenerated: 'We propose supplying 100 high-performance workstations meeting all specifications...',
+    proposalFinal: 'We propose supplying 100 high-performance workstations meeting all specifications. Our company has 15 years of experience in IT procurement and maintains local inventory for rapid deployment.',
+    createdAt: '2025-01-12T09:30:00Z',
+    updatedAt: '2025-01-15T11:20:00Z',
   },
   {
-    id: 'tender-003',
-    title: 'School Supplies Contract',
-    description: 'Annual office and classroom supplies including furniture, stationery, and tech items.',
-    organization: 'School District 7',
-    status: 'open',
-    category: 'supplies',
-    budget: 85000,
-    deadline: getRandomDate(20),
-    aiRankScore: 54,
-    aiSummary: 'Lower margin commodity supply - competitive pricing essential.',
-    aiRecommendation: 'PASS - Margin too thin, high competition.',
-    createdAt: new Date('2025-01-08'),
-    updatedAt: new Date('2025-01-15'),
+    id: 3,
+    batchId: 1,
+    bidNum: 'APP-2025-003',
+    bidMasterNum: 'MASTER-2025-003',
+    bidNameFr: 'Appel d\'offre pour services de nettoyage',
+    bidNameEn: 'Call for Tender - Cleaning Services',
+    bidNameAr: null,
+    scrapedData: {
+      source: 'tunisie-appels-offres.gov.tn',
+      scraped_date: '2025-01-16',
+      raw_content: '...',
+    },
+    status: 'rejected',
+    datePublished: '2025-01-14',
+    finalSubmissionDate: addDays(today, 5),
+    institution: 'Hôpital Central de Tunis',
+    generalInfo: {
+      budget_estimated: '50 000 TND',
+      duration_months: '12',
+      location: 'Tunis',
+      contact_person: 'Dr. Hmida Ben Ali',
+    },
+    lotsInfo: {
+      daily_cleaning: {
+        frequency: '7 days/week',
+        area_sqm: '15000',
+        rate_daily: '150 TND',
+      },
+      specialized_cleaning: {
+        frequency: 'Monthly',
+        services: 'Carpet cleaning, window cleaning, sanitization',
+        rate_monthly: '2000 TND',
+      },
+    },
+    llmMergedObject: {
+      project_type: 'Services',
+      estimated_total: '50000 TND',
+      requirements: 'Medical-grade cleaning protocols',
+      staffing: '10-15 personnel required',
+    },
+    llmSummary: 'Hospital cleaning services contract for 15,000 sqm facility. 12-month duration with daily and specialized monthly cleaning. Budget 50,000 TND. Requires medical-grade sanitization protocols.',
+    proposalAiGenerated: null,
+    proposalFinal: null,
+    createdAt: '2025-01-14T13:15:00Z',
+    updatedAt: '2025-01-16T09:00:00Z',
   },
   {
-    id: 'tender-004',
-    title: 'Community Health Facility Renovation',
-    description: 'Complete interior renovation including medical spaces, waiting areas, and administrative offices.',
-    organization: 'Health Services Agency',
-    status: 'open',
-    category: 'construction',
-    budget: 320000,
-    deadline: getRandomDate(18),
-    aiRankScore: 91,
-    aiSummary: 'Excellent fit - portfolio matches perfectly, team has completed similar projects.',
-    aiRecommendation: 'HIGHLY RECOMMEND - Top priority for pursuit.',
-    createdAt: new Date('2025-01-11'),
-    updatedAt: new Date('2025-01-15'),
+    id: 4,
+    batchId: 1,
+    bidNum: 'APP-2025-004',
+    bidMasterNum: 'MASTER-2025-004',
+    bidNameFr: 'Appel d\'offre pour formation professionnelle',
+    bidNameEn: 'Call for Tender - Vocational Training Program',
+    bidNameAr: null,
+    scrapedData: {
+      source: 'tunisie-appels-offres.gov.tn',
+      scraped_date: '2025-01-16',
+      raw_content: '...',
+    },
+    status: 'needs_more_data',
+    datePublished: '2025-01-15',
+    finalSubmissionDate: addDays(today, 2),
+    institution: 'ONEC - Office National de l\'Emploi et des Compétences',
+    generalInfo: {
+      budget_estimated: '200 000 TND',
+      duration_months: '6',
+      location: 'Sousse',
+      target_participants: '200 trainees',
+    },
+    lotsInfo: {
+      digital_skills: {
+        course_duration_hours: '120',
+        participant_count: '100',
+        cost_per_person: '500 TND',
+      },
+      business_skills: {
+        course_duration_hours: '80',
+        participant_count: '100',
+        cost_per_person: '300 TND',
+      },
+    },
+    llmMergedObject: {
+      project_type: 'Education/Training',
+      total_participants: '200',
+      estimated_budget: '200000 TND',
+      focus_areas: ['Digital transformation', 'Business management', 'Industry 4.0'],
+    },
+    llmSummary: 'Vocational training program for 200 participants covering digital skills and business management. 6-month program in Sousse. Budget 200,000 TND. Accredited trainer certification required.',
+    proposalAiGenerated: null,
+    proposalFinal: null,
+    createdAt: '2025-01-15T16:45:00Z',
+    updatedAt: '2025-01-16T10:30:00Z',
   },
   {
-    id: 'tender-005',
-    title: 'IT Managed Services Contract',
-    description: 'Managed IT services including help desk, security monitoring, infrastructure management.',
-    organization: 'County Government',
-    status: 'closing_soon',
-    category: 'services',
-    budget: 200000,
-    deadline: getRandomDate(1),
-    aiRankScore: 78,
-    aiSummary: 'Good opportunity - our MSP capabilities align well.',
-    aiRecommendation: 'RECOMMEND - Urgent deadline, prepare submission immediately.',
-    createdAt: new Date('2025-01-13'),
-    updatedAt: new Date('2025-01-15'),
-  },
-  {
-    id: 'tender-006',
-    title: 'Traffic Signal System Replacement',
-    description: 'Installation of modern adaptive traffic signal system across downtown district.',
-    organization: 'Department of Transportation',
-    status: 'open',
-    category: 'technology',
-    budget: 680000,
-    deadline: getRandomDate(25),
-    aiRankScore: 65,
-    aiSummary: 'Specialized equipment and regulatory compliance required - niche expertise needed.',
-    aiRecommendation: 'CONSIDER - Reach out to potential subcontractors for capability assessment.',
-    createdAt: new Date('2025-01-09'),
-    updatedAt: new Date('2025-01-15'),
+    id: 5,
+    batchId: 2,
+    bidNum: 'APP-2025-005',
+    bidMasterNum: 'MASTER-2025-005',
+    bidNameFr: 'Appel d\'offre pour construction d\'école',
+    bidNameEn: 'Call for Tender - School Construction',
+    bidNameAr: null,
+    scrapedData: {
+      source: 'tunisie-appels-offres.gov.tn',
+      scraped_date: '2025-01-17',
+      raw_content: '...',
+    },
+    status: 'accepted',
+    datePublished: '2025-01-16',
+    finalSubmissionDate: addDays(today, 10),
+    institution: 'Ministère de l\'Éducation',
+    generalInfo: {
+      budget_estimated: '1 000 000 TND',
+      duration_months: '18',
+      location: 'Sfax',
+      capacity_students: '500',
+    },
+    lotsInfo: {
+      civil_works: {
+        area_sqm: '8000',
+        cost_estimate: '600 000 TND',
+        timeline_months: '12',
+      },
+      equipment_furnishing: {
+        description: 'Classroom furniture, labs, library',
+        cost_estimate: '300 000 TND',
+      },
+    },
+    llmMergedObject: {
+      project_type: 'Infrastructure',
+      scope: 'New school complex for 500 students',
+      estimated_total: '1000000 TND',
+      key_phases: ['Site preparation', 'Construction', 'Equipment installation', 'Handover'],
+    },
+    llmSummary: 'Construction of new 500-student capacity school in Sfax. 18-month project. Budget 1,000,000 TND. Includes civil works and equipment procurement. Environmental and accessibility standards compliance required.',
+    proposalAiGenerated: 'Our company proposes a comprehensive approach to school construction...',
+    proposalFinal: null,
+    createdAt: '2025-01-16T12:00:00Z',
+    updatedAt: '2025-01-17T08:30:00Z',
   },
 ]
 
-// Mock proposals
-export const mockProposals: Proposal[] = [
+// Mock batch data
+export const mockBatches: Batch[] = [
   {
-    id: 'prop-001',
-    tenderId: 'tender-001',
-    status: 'submitted',
-    content: `Our company brings 15 years of experience in commercial HVAC systems.
-
-## Proposed Approach
-- Full system assessment (Week 1)
-- Equipment procurement (Weeks 2-3)
-- Installation phase (Weeks 4-8)
-- Testing and commissioning (Week 9)
-
-## Team
-- Project Manager: John Smith (HVAC certified)
-- Lead Technician: Sarah Johnson (20+ years experience)
-- 2 additional certified technicians
-
-## Timeline: 10 weeks
-## Cost: $235,000`,
-    submittedAt: new Date('2025-01-15'),
-    createdAt: new Date('2025-01-14'),
-    updatedAt: new Date('2025-01-15'),
-  },
-]
-
-// Mock pipeline runs
-export const mockPipelineRuns: PipelineRun[] = [
-  {
-    id: 'run-001',
+    id: 1,
     runNumber: 42,
-    status: 'completed',
-    startedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    completedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000),
-    tenderCount: 12,
-    successCount: 11,
-    errorCount: 1,
-    logs: [
-      {
-        id: 'log-001',
-        runId: 'run-001',
-        level: 'info',
-        message: 'Pipeline started',
-        timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      },
-      {
-        id: 'log-002',
-        runId: 'run-001',
-        level: 'info',
-        message: 'Fetching tender data from government sources...',
-        timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 1000),
-      },
-      {
-        id: 'log-003',
-        runId: 'run-001',
-        level: 'info',
-        message: 'Processing 12 tenders',
-        timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 5 * 60 * 1000),
-      },
-      {
-        id: 'log-004',
-        runId: 'run-001',
-        level: 'error',
-        message: 'Failed to parse tender #8: Invalid document format',
-        timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 15 * 60 * 1000),
-        details: 'PDF parser failed: Expected text content, got binary stream',
-        tenderId: 'tender-008',
-      },
-      {
-        id: 'log-005',
-        runId: 'run-001',
-        level: 'info',
-        message: 'Running AI analysis on 11 tenders',
-        timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 20 * 60 * 1000),
-      },
-      {
-        id: 'log-006',
-        runId: 'run-001',
-        level: 'info',
-        message: 'Pipeline completed successfully',
-        timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000),
-      },
-    ],
+    tendersFoundCount: 5,
+    runDate: new Date().toISOString().split('T')[0],
+    targetDate: addDays(today, 7),
   },
   {
-    id: 'run-002',
+    id: 2,
     runNumber: 41,
-    status: 'completed',
-    startedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    completedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 50 * 60 * 1000),
-    tenderCount: 9,
-    successCount: 9,
-    errorCount: 0,
-    logs: [
-      {
-        id: 'log-101',
-        runId: 'run-002',
-        level: 'info',
-        message: 'Pipeline started',
-        timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-      },
-      {
-        id: 'log-102',
-        runId: 'run-002',
-        level: 'info',
-        message: 'Fetching tender data from government sources...',
-        timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 1000),
-      },
-      {
-        id: 'log-103',
-        runId: 'run-002',
-        level: 'info',
-        message: 'Processing 9 tenders',
-        timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 5 * 60 * 1000),
-      },
-      {
-        id: 'log-104',
-        runId: 'run-002',
-        level: 'info',
-        message: 'Running AI analysis on 9 tenders',
-        timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 15 * 60 * 1000),
-      },
-      {
-        id: 'log-105',
-        runId: 'run-002',
-        level: 'info',
-        message: 'Pipeline completed successfully',
-        timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 50 * 60 * 1000),
-      },
-    ],
+    tendersFoundCount: 12,
+    runDate: addDays(today, -1),
+    targetDate: addDays(today, 6),
+  },
+  {
+    id: 3,
+    runNumber: 40,
+    tendersFoundCount: 8,
+    runDate: addDays(today, -2),
+    targetDate: addDays(today, 5),
   },
 ]
 
-// Get functions for components
-export function getDashboardStats(): DashboardStats {
-  const openTenders = mockTenders.filter((t) => t.status === 'open' || t.status === 'closing_soon')
-  const highScore = mockTenders.filter((t) => t.aiRankScore >= 75)
-  const submitted = mockProposals.filter((p) => p.status === 'submitted')
-  const avgScore = mockTenders.reduce((sum, t) => sum + t.aiRankScore, 0) / mockTenders.length
-
-  return {
-    totalTenders: mockTenders.length,
-    openTenders: openTenders.length,
-    highScoreTenders: highScore.length,
-    submittedProposals: submitted.length,
-    averageScore: Math.round(avgScore),
-  }
+// Helper functions
+export function getTenderById(id: number | string): Tender | undefined {
+  const numId = typeof id === 'string' ? parseInt(id.split('-')[1] || '0') : id
+  return mockTenders.find((t) => t.id === numId)
 }
 
-export function getTenders(): Tender[] {
+export function getAllTenders(): Tender[] {
   return mockTenders
 }
 
-export function getTenderById(id: string): Tender | undefined {
-  return mockTenders.find((t) => t.id === id)
+export function filterTenders(
+  status?: string,
+  institution?: string,
+  dateRange?: { from: Date; to: Date },
+): Tender[] {
+  return mockTenders.filter((tender) => {
+    if (status && tender.status !== status) return false
+    if (institution && tender.institution !== institution) return false
+    if (dateRange && tender.finalSubmissionDate) {
+      const deadline = new Date(tender.finalSubmissionDate)
+      if (deadline < dateRange.from || deadline > dateRange.to) return false
+    }
+    return true
+  })
 }
 
-export function getProposalsByTenderId(tenderId: string): Proposal[] {
-  return mockProposals.filter((p) => p.tenderId === tenderId)
+export function getDistinctInstitutions(): string[] {
+  const institutions = new Set(
+    mockTenders
+      .map((t) => t.institution)
+      .filter((i): i is string => i !== null && i !== undefined),
+  )
+  return Array.from(institutions).sort()
 }
 
-export function getPipelineRuns(): PipelineRun[] {
-  return mockPipelineRuns
+export function getDashboardStats(): DashboardStats {
+  const now = new Date()
+  const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+
+  const needsMoreDataCount = mockTenders.filter((t) => t.status === 'needs_more_data').length
+  const acceptedCount = mockTenders.filter((t) => t.status === 'accepted').length
+  const dueWithin7Days = mockTenders.filter((t) => {
+    if (!t.finalSubmissionDate) return false
+    const deadline = new Date(t.finalSubmissionDate)
+    return deadline >= now && deadline <= sevenDaysFromNow
+  }).length
+
+  return {
+    totalTenders: mockTenders.length,
+    needsMoreDataCount,
+    dueWithin7Days,
+    acceptedCount,
+  }
 }
 
-export function getPipelineRunById(id: string): PipelineRun | undefined {
-  return mockPipelineRuns.find((r) => r.id === id)
+export function getLatestBatch(): Batch | undefined {
+  return mockBatches[0]
+}
+
+export function getAllBatches(): Batch[] {
+  return mockBatches
 }

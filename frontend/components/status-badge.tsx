@@ -7,10 +7,9 @@ interface StatusBadgeProps {
 }
 
 const statusConfig: Record<TenderStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  open: { label: 'Open', variant: 'default' },
-  closing_soon: { label: 'Closing Soon', variant: 'destructive' },
-  closed: { label: 'Closed', variant: 'secondary' },
-  awarded: { label: 'Awarded', variant: 'outline' },
+  accepted: { label: 'Accepted', variant: 'default' },
+  rejected: { label: 'Rejected', variant: 'destructive' },
+  needs_more_data: { label: 'Needs More Data', variant: 'secondary' },
 }
 
 export function StatusBadge({ status, variant }: StatusBadgeProps) {
