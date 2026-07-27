@@ -1,9 +1,15 @@
 'use client'
 
+import { X } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Slider } from '@/components/ui/slider'
+import { Calendar } from '@/components/ui/calendar'
 import { Card } from '@/components/ui/card'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -11,15 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import { Calendar } from '@/components/ui/calendar'
-import { X } from 'lucide-react'
-import type { TenderStatus } from '@/lib/types'
+import { Slider } from '@/components/ui/slider'
 import { getDistinctInstitutions } from '@/lib/mock-data'
+import type { TenderStatus } from '@/lib/types'
 
 interface TenderFiltersProps {
   onFiltersChange?: (filters: FilterState) => void
@@ -53,10 +53,10 @@ export function TenderFilters({ onFiltersChange }: TenderFiltersProps) {
     onFiltersChange?.(newFilters)
   }
 
-  const handleInstitutionChange = (institution: string) => {
+  const handleInstitutionChange = (institution: string | null) => {
     const newFilters = {
       ...filters,
-      institution: institution === 'all' ? undefined : institution,
+      institution: institution === 'all' || institution === null ? undefined : institution,
     }
     setFilters(newFilters)
     onFiltersChange?.(newFilters)
@@ -86,12 +86,13 @@ export function TenderFilters({ onFiltersChange }: TenderFiltersProps) {
       <div className="space-y-6">
         <div className="grid grid-cols-3 gap-6">
           {/* Status Multi-select */}
-          <div>
-            <label className="text-sm font-medium text-foreground">Status</label>
+          <fieldset className="border-0 p-0 m-0 min-w-0">
+            <legend className="text-sm font-medium text-foreground">Status</legend>
             <div className="mt-2 space-y-2">
               {statusOptions.map((status) => (
                 <label key={status} className="flex items-center gap-2 cursor-pointer">
                   <input
+                    id={`status-${status}`}
                     type="checkbox"
                     checked={filters.statuses.includes(status)}
                     onChange={() => handleStatusToggle(status)}
@@ -103,13 +104,19 @@ export function TenderFilters({ onFiltersChange }: TenderFiltersProps) {
                 </label>
               ))}
             </div>
-          </div>
+          </fieldset>
 
           {/* Institution Select */}
           <div>
-            <label className="text-sm font-medium text-foreground">Institution</label>
+            <span id="institution-label" className="text-sm font-medium text-foreground">
+              Institution
+            </span>
             <Select defaultValue="all" onValueChange={handleInstitutionChange}>
-              <SelectTrigger className="mt-2">
+              <SelectTrigger
+                id="institution-select"
+                aria-labelledby="institution-label"
+                className="mt-2"
+              >
                 <SelectValue placeholder="All institutions" />
               </SelectTrigger>
               <SelectContent>
@@ -125,10 +132,15 @@ export function TenderFilters({ onFiltersChange }: TenderFiltersProps) {
 
           {/* Date Range Picker */}
           <div>
-            <label className="text-sm font-medium text-foreground">Deadline Range</label>
+            <span id="deadline-range-label" className="text-sm font-medium text-foreground">
+              Deadline Range
+            </span>
             <div className="mt-2">
               <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
-                <PopoverTrigger className="flex w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                <PopoverTrigger
+                  aria-labelledby="deadline-range-label"
+                  className="flex w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
                   {filters.dateRange ? (
                     <span>
                       {filters.dateRange.from.toLocaleDateString()} -{' '}
@@ -138,21 +150,21 @@ export function TenderFilters({ onFiltersChange }: TenderFiltersProps) {
                     <span>Pick dates</span>
                   )}
                 </PopoverTrigger>
-              <PopoverContent className="w-80" align="end">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm font-medium text-foreground mb-2">From:</p>
-                    <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} />
+                <PopoverContent className="w-80" align="end">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-2">From:</p>
+                      <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-2">To:</p>
+                      <Calendar mode="single" selected={dateTo} onSelect={setDateTo} />
+                    </div>
+                    <Button onClick={handleDateRangeSet} className="w-full">
+                      Apply Range
+                    </Button>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground mb-2">To:</p>
-                    <Calendar mode="single" selected={dateTo} onSelect={setDateTo} />
-                  </div>
-                  <Button onClick={handleDateRangeSet} className="w-full">
-                    Apply Range
-                  </Button>
-                </div>
-              </PopoverContent>
+                </PopoverContent>
               </Popover>
             </div>
           </div>

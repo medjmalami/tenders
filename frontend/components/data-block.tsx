@@ -50,6 +50,7 @@ export function DataBlock({ data, title, level = 0 }: DataBlockProps) {
           return (
             <div key={key} className="space-y-1">
               <button
+                type="button"
                 onClick={() => toggleExpand(key)}
                 className="flex items-center gap-2 text-foreground hover:text-primary transition-colors text-sm"
               >
@@ -64,15 +65,21 @@ export function DataBlock({ data, title, level = 0 }: DataBlockProps) {
                 <div className="ml-4">
                   {Array.isArray(value) ? (
                     <div className="space-y-2">
-                      {value.map((item, idx) => (
-                        <div key={idx} className="border-l border-border pl-3">
-                          {typeof item === 'object' && item !== null ? (
-                            <DataBlock data={item} level={level + 1} />
-                          ) : (
-                            <span className="text-muted-foreground">[{idx}] {String(item)}</span>
-                          )}
-                        </div>
-                      ))}
+                      {value.map((item, idx) => {
+                        const itemKey =
+                          item && typeof item === 'object' && 'id' in item
+                            ? `${key}-${(item as Record<string, any>).id}`
+                            : `${key}-${idx}-${typeof item === 'object' ? JSON.stringify(item) : String(item)}`
+                        return (
+                          <div key={itemKey} className="border-l border-border pl-3">
+                            {typeof item === 'object' && item !== null ? (
+                              <DataBlock data={item} level={level + 1} />
+                            ) : (
+                              <span className="text-muted-foreground">[{idx}] {String(item)}</span>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
                   ) : (
                     <DataBlock data={value} level={level + 1} />
