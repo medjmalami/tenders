@@ -31,13 +31,27 @@ def ranker_node(state: TenderState) -> dict:
             "construction, catering, medical supplies — expired deadline, or "
             "hard eligibility failure).\n"
             "- need_more_data: insufficient information to decide (ambiguous "
-            "description, missing critical fields like deadline or budget).\n\n"
+            "description, missing critical fields).\n\n"
             "Respond with exactly one word: acceptable, rejected, or "
             "need_more_data."
         )
     else:
         context = json.dumps(state["tender_raw"], ensure_ascii=False, indent=2)
         prompt = (
+            "You are evaluating whether ZetaBox (a software company in Sfax, "
+            "Tunisia) should bid on this tender.\n\n"
+            "Classification criteria:\n"
+            "- acceptable: ZetaBox can and should bid (sector match with "
+            "software/IT/services, deadline not expired, no disqualifying "
+            "eligibility criteria such as donor-specific restrictions that "
+            "exclude ZetaBox).\n"
+            "- rejected: ZetaBox should not bid (sector mismatch — e.g. "
+            "construction, catering, medical supplies — expired deadline, or "
+            "hard eligibility failure).\n"
+            "- need_more_data: insufficient information to decide (ambiguous "
+            "description, missing critical fields).\n\n"
+            "Respond with exactly one word: acceptable, rejected, or "
+            "need_more_data."
             "Classify this tender as acceptable, rejected, or need_more_data.\n\n"
             f"Raw tender data:\n{context}"
         )
