@@ -1,5 +1,6 @@
 import asyncio
 import json
+from datetime import datetime, timedelta
 from typing import Any
 
 import httpx
@@ -36,7 +37,7 @@ async def fetch_tuneps_tenders_by_date(
 
 async def main():
     # Adjust this date to one you know has published tenders
-    date = "2026-06-24"
+    date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
 
     result = await fetch_tuneps_tenders_by_date(date=date, offset=0, limit=10)
 

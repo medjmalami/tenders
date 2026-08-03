@@ -7,7 +7,7 @@ import httpx
 async def fetch_tuneps_tenders_by_date(
     date: str | None = None,
     offset: int = 0,
-    limit: int = 10,
+    limit: int = 50,
 ) -> dict[str, Any]:
     if date is None:
         date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
