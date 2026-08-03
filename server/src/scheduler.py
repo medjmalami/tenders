@@ -29,7 +29,14 @@ async def scrape_tenders_job():
         try:
             result = await graph.ainvoke(initial_state)
             print(
-                f"Processed tender {tender.get('bidNo')}: {result.get('classification')}"
+                f"""
+            Processed tender {tender.get("bidNo")}
+            Classification: {result.get("classification")}
+
+            =======================================================================
+            {result}
+            =======================================================================
+            """
             )
         except Exception as e:
             print(f"Failed to process tender {tender.get('bidNo')}: {e}")
