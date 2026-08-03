@@ -11,7 +11,8 @@ scheduler = AsyncIOScheduler()
 
 
 async def scrape_tenders_job():
-    date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    date = "2026-06-24"
+    # date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
     res = await fetch_tuneps_tenders_by_date(date)
 
     tenders = res.get("payload", {}).get("data", [])
