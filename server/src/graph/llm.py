@@ -14,7 +14,7 @@ load_dotenv()
 
 
 ollama_llm = ChatOllama(
-    model="qwen2.5:7b",
+    model="gemma4:31b-cloud",
     temperature=0,
 )
 
@@ -25,4 +25,4 @@ google_llm = ChatGoogleGenerativeAI(
 )
 
 # Active model for the pipeline. Swap to `ollama_llm` to run fully local.
-llm = google_llm
+llm = ollama_llm
