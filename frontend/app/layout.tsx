@@ -1,5 +1,6 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
+import Script from 'next/script'
 import './globals.css'
 import { Toaster } from 'sonner'
 
@@ -40,7 +41,25 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-background">
+    <html lang="en" className="bg-background" suppressHydrationWarning>
+      <head>
+        <Script
+          id="theme-sync"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                const mq = window.matchMedia('(prefers-color-scheme: dark)');
+                function apply(isDark) {
+                  document.documentElement.classList.toggle('dark', isDark);
+                }
+                apply(mq.matches);
+                mq.addEventListener('change', function(e) { apply(e.matches); });
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="antialiased">
         {children}
         <Toaster />
