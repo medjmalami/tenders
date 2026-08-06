@@ -1,8 +1,8 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 from langchain_core.messages import AIMessage
 from sqlalchemy import func, select
 
@@ -184,7 +184,7 @@ async def scrape_tenders_job():
 def start_scheduler():
     scheduler.add_job(
         scrape_tenders_job,
-        trigger=IntervalTrigger(seconds=30),
+        trigger=CronTrigger(hour=3, minute=0),
         id="scrape_tenders",
         replace_existing=True,
         max_instances=1,
