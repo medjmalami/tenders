@@ -1,4 +1,4 @@
-import type { TenderStatus, TenderSummary } from "./types";
+import type { Tender, TenderStatus, TenderSummary } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -60,5 +60,33 @@ export async function getTenders(
     page: data.page,
     pageSize: data.page_size,
     tenders: data.tenders,
+  };
+}
+
+
+export async function getTenderById(id: number): Promise<Tender | null> {
+  const res = await fetch(`${API_URL}/tenders/${id}`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Failed to fetch tender: ${res.status}`);
+  const data = await res.json();
+  return {
+    id: data.id,
+    batchId: data.batch_id,
+    bidNum: data.bid_num,
+    bidMasterNum: data.bid_master_num,
+    bidNameAr: data.bid_name_ar,
+    bidNameFr: data.bid_name_fr,
+    bidNameEn: data.bid_name_en,
+    scrapedData: data.scraped_data,
+    status: data.status,
+    datePublished: data.date_published,
+    finalSubmissionDate: data.final_submission_date,
+    institution: data.institution,
+    generalInfo: data.general_info,
+    lotsInfo: data.lots_info,
+    llmMergedObject: data.llm_merged_object,
+    llmSummary: data.llm_summary,
+    proposalAiGenerated: data.proposal_ai_generated,
+    createdAt: data.created_at,
   };
 }

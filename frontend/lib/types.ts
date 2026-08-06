@@ -19,9 +19,9 @@ export interface Tender {
   llmMergedObject: Record<string, any> | null // unstructured JSONB — AI-enriched/merged data
   llmSummary: string | null // AI-generated prose summary
   proposalAiGenerated: string | null // AI-drafted proposal text
-  proposalFinal: string | null // human-edited/final proposal text
+  proposalFinal?: string | null // human-edited/final proposal text
   createdAt: string
-  updatedAt: string
+  updatedAt?: string | null
 }
 export interface TenderSummary {
   id: number

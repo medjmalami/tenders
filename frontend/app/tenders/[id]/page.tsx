@@ -2,17 +2,17 @@
 
 import { ArrowLeft, Building2, Calendar } from 'lucide-react'
 import Link from 'next/link'
-import { use } from 'react'
+import { use, useEffect, useState } from 'react'
 import { AppLayout } from '@/components/app-layout'
 import { DataBlock } from '@/components/data-block'
+import { ProposalEditor } from '@/components/proposal-editor'
 import { StatusBadge } from '@/components/status-badge'
-import { TenderActionBar } from '@/components/tender-action-bar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { UrgentIndicator } from '@/components/urgent-indicator'
-import { getTenderById } from '@/lib/mock-data'
-import { getTenderDisplayName } from '@/lib/types'
+import { getTenderById } from '@/lib/api'
+import { getTenderDisplayName, type Tender } from '@/lib/types'
 
 interface TenderDetailPageProps {
   params: Promise<{ id: string }>
@@ -20,7 +20,59 @@ interface TenderDetailPageProps {
 
 export default function TenderDetailPage({ params }: TenderDetailPageProps) {
   const { id } = use(params)
-  const tender = getTenderById(parseInt(id))
+
+  const [tender, setTender] = useState<Tender | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadTender() {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const data = await getTenderById(parseInt(id))
+        if (!cancelled) setTender(data)
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load tender')
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
+    }
+
+    loadTender()
+
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex h-full items-center justify-center p-8">
+          <p className="text-muted-foreground">Loading tender…</p>
+        </div>
+      </AppLayout>
+    )
+  }
+
+  if (error) {
+    return (
+      <AppLayout>
+        <div className="flex h-full items-center justify-center p-8">
+          <Card className="p-8 text-center">
+            <h2 className="text-lg font-semibold text-foreground">Failed to load tender</h2>
+            <p className="mt-2 text-muted-foreground">{error}</p>
+            <Link href="/">
+              <Button className="mt-4">Return to Dashboard</Button>
+            </Link>
+          </Card>
+        </div>
+      </AppLayout>
+    )
+  }
 
   if (!tender) {
     return (
@@ -133,9 +185,6 @@ export default function TenderDetailPage({ params }: TenderDetailPageProps) {
                 </details>
               </Card>
             )}
-
-            {/* Action Bar */}
-            <TenderActionBar tender={tender} />
           </TabsContent>
 
           {/* AI Summary Tab */}
@@ -155,23 +204,12 @@ export default function TenderDetailPage({ params }: TenderDetailPageProps) {
               </Card>
             )}
 
-            {/* Proposal Link Card */}
+            {/* Proposal Card */}
             <Card className="p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Proposal</h2>
-              {tender.proposalAiGenerated || tender.proposalFinal ? (
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    {tender.proposalFinal ? 'Proposal has been drafted.' : 'AI-generated draft available.'}
-                  </p>
-                  <Link href={`/tenders/${tender.id}/proposal`}>
-                    <Button>View Proposal</Button>
-                  </Link>
-                </div>
+              {tender.proposalAiGenerated ? (
+                <ProposalEditor tender={tender} />
               ) : (
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">No proposal generated yet.</p>
-                  <Button disabled>Generate Proposal</Button>
-                </div>
+                <p className="text-sm text-muted-foreground">No proposal generated yet.</p>
               )}
             </Card>
           </TabsContent>

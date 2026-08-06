@@ -1,12 +1,13 @@
 'use client'
 
 import { Download, FileDown } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Textarea } from '@/components/ui/textarea'
 import type { Tender } from '@/lib/types'
 
 interface ProposalEditorProps {
@@ -14,7 +15,7 @@ interface ProposalEditorProps {
 }
 
 export function ProposalEditor({ tender }: ProposalEditorProps) {
-  const [finalContent, setFinalContent] = useState(tender.proposalFinal || tender.proposalAiGenerated || '')
+  const finalContent = tender.proposalFinal || tender.proposalAiGenerated || ''
 
   const proposalStatus = useMemo(() => {
     if (!tender.proposalAiGenerated && !tender.proposalFinal) return 'Not started'
@@ -22,14 +23,6 @@ export function ProposalEditor({ tender }: ProposalEditorProps) {
     if (tender.proposalFinal === tender.proposalAiGenerated) return 'Matches AI draft'
     return 'Edited'
   }, [tender.proposalAiGenerated, tender.proposalFinal])
-
-  const handleSave = () => {
-    if (!finalContent.trim()) {
-      toast.error('Proposal content cannot be empty')
-      return
-    }
-    toast.success('Proposal saved successfully')
-  }
 
   const handleExportPDF = () => {
     toast.info('PDF export feature coming soon')
@@ -47,55 +40,42 @@ export function ProposalEditor({ tender }: ProposalEditorProps) {
         <Badge variant="secondary">{proposalStatus}</Badge>
       </div>
 
-      {/* AI Generated Draft (Read-only) */}
-      {tender.proposalAiGenerated && (
-        <Card className="border-l-4 border-l-blue-500 bg-blue-50 p-6 dark:bg-blue-950">
-          <div className="space-y-4">
-            <div>
-              <h3 className="font-semibold text-foreground">AI-Generated Draft</h3>
-              <p className="text-sm text-muted-foreground mt-1">Reference only - original AI draft</p>
-            </div>
-            <div className="rounded-lg bg-background p-4 text-sm text-muted-foreground whitespace-pre-wrap font-mono text-xs max-h-48 overflow-y-auto">
-              {tender.proposalAiGenerated}
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Final Proposal Editor */}
-      <Card className="p-6">
+      {/* Proposal Preview */}
+      <Card className="border-l-4 border-l-blue-500 bg-blue-50 p-6 dark:bg-blue-950">
         <div className="space-y-4">
           <div>
-            <h3 className="font-semibold text-foreground">Final Proposal</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              {tender.proposalFinal ? 'Edit your proposal' : 'Create your proposal (or start from AI draft)'}
+              Rendered preview of the proposal
             </p>
           </div>
 
-          <Textarea
-            value={finalContent}
-            onChange={(e) => setFinalContent(e.target.value)}
-            placeholder="Enter your final proposal here..."
-            className="min-h-96"
-          />
+          <div className="rounded-lg bg-background p-6 min-h-96">
+            {finalContent.trim() ? (
+              <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:font-semibold prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {finalContent}
+                </ReactMarkdown>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Nothing to preview yet.
+              </p>
+            )}
+          </div>
         </div>
       </Card>
 
-      {/* Actions */}
+      {/* Export Actions */}
       <Card className="bg-blue-50 p-6 dark:bg-blue-950">
         <div className="space-y-4">
           <div>
-            <h3 className="font-semibold text-foreground">Save & Export</h3>
+            <h3 className="font-semibold text-foreground">Export</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Save your work or export in different formats
+              Export the proposal in different formats
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button onClick={handleSave} className="gap-2 bg-green-600 hover:bg-green-700">
-              Save Proposal
-            </Button>
-
             <Button onClick={handleExportPDF} variant="outline" className="gap-2">
               <FileDown className="h-4 w-4" />
               Export as PDF
