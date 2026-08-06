@@ -1,5 +1,4 @@
 'use client'
-
 import { ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -12,13 +11,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import type { Tender } from '@/lib/types'
-import { getTenderDisplayName as getDisplayName } from '@/lib/types'
+import type { TenderSummary } from '@/lib/types'
 import { StatusBadge } from './status-badge'
 import { UrgentIndicator } from './urgent-indicator'
 
 interface TenderTableProps {
-  tenders: Tender[]
+  tenders: TenderSummary[]
 }
 
 export function TenderTable({ tenders }: TenderTableProps) {
@@ -38,16 +36,21 @@ export function TenderTable({ tenders }: TenderTableProps) {
           {tenders.map((tender) => (
             <TableRow key={tender.id} className="hover:bg-muted/50">
               <TableCell>
-                <div className="font-medium text-foreground">{getDisplayName(tender)}</div>
-                <div className="text-xs text-muted-foreground">{tender.bidNum}</div>
+                <div className="font-medium text-foreground">{tender.name}</div>
               </TableCell>
-              <TableCell className="text-sm text-muted-foreground">{tender.institution}</TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {tender.institution}
+              </TableCell>
               <TableCell>
                 <div className="space-y-1">
                   <div className="text-sm text-foreground">
-                    {tender.finalSubmissionDate ? new Date(tender.finalSubmissionDate).toLocaleDateString() : '—'}
+                    {tender.deadline
+                      ? new Date(tender.deadline).toLocaleDateString('en-GB')
+                      : '—'}
                   </div>
-                  {tender.finalSubmissionDate && <UrgentIndicator deadline={new Date(tender.finalSubmissionDate)} />}
+                  {tender.deadline && (
+                    <UrgentIndicator deadline={new Date(tender.deadline)} />
+                  )}
                 </div>
               </TableCell>
               <TableCell>

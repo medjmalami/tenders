@@ -23,7 +23,13 @@ export interface Tender {
   createdAt: string
   updatedAt: string
 }
-
+export interface TenderSummary {
+  id: number
+  name: string
+  institution: string
+  deadline: string | null
+  status: TenderStatus
+}
 export interface Batch {
   id: number
   runNumber: number
