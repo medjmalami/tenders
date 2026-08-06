@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from src.routes import mock_routes
+from src.routes import dashboard_routes, mock_routes
 from src.scheduler import scheduler, start_scheduler
 
 
@@ -23,3 +23,4 @@ app = FastAPI(
 )
 
 app.include_router(mock_routes.router)
+app.include_router(dashboard_routes.router)
