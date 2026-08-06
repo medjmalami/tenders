@@ -1,9 +1,9 @@
 from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import Depends, Query
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.session import get_db
@@ -60,7 +60,14 @@ async def list_tenders(
     stmt = (
         select(Tender)
         .where(*filters)
-        .order_by(Tender.final_submission_date.asc().nullslast(), Tender.id)
+        .order_by(
+            case(
+                (Tender.final_submission_date <= date.today(), 1),
+                else_=0,
+            ),
+            Tender.final_submission_date.asc().nullslast(),
+            Tender.id,
+        )
         .offset(offset)
         .limit(limit)
     )

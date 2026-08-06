@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 
 from fastapi import Depends
 from pydantic import BaseModel
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.session import get_db
@@ -61,6 +61,10 @@ async def get_dashboard_stats(db: AsyncSession = Depends(get_db)) -> DashboardSt
             Tender.status,
         )
         .order_by(
+            case(
+                (Tender.final_submission_date <= today, 1),
+                else_=0,
+            ),
             Tender.final_submission_date.asc().nullslast(),
             Tender.id,
         )
