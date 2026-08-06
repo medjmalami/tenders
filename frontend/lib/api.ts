@@ -43,7 +43,9 @@ export async function getTenders(
   const searchParams = new URLSearchParams();
   searchParams.set("limit", String(params.limit ?? 10));
   searchParams.set("offset", String(params.offset ?? 0));
-  params.statuses?.forEach((s) => searchParams.append("statuses", s));
+  params.statuses?.forEach((s) => {
+    searchParams.append("statuses", s);
+  });
   if (params.institution) searchParams.set("institution", params.institution);
   if (params.deadlineFrom) searchParams.set("deadline_from", params.deadlineFrom);
   if (params.deadlineTo) searchParams.set("deadline_to", params.deadlineTo);

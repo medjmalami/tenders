@@ -108,6 +108,7 @@ export default function Dashboard() {
               <TenderTable tenders={tenders} />
               <div className="mt-6 flex items-center justify-center gap-4">
                 <button
+                  type="button"
                   className="rounded border px-3 py-1 disabled:opacity-50"
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage((p) => p - 1)}
@@ -118,6 +119,7 @@ export default function Dashboard() {
                   Page {currentPage} of {totalPages}
                 </span>
                 <button
+                  type="button"
                   className="rounded border px-3 py-1 disabled:opacity-50"
                   disabled={currentPage === totalPages}
                   onClick={() => setCurrentPage((p) => p + 1)}
