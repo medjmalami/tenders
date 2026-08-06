@@ -2,10 +2,8 @@
 
 import { AppLayout } from '@/components/app-layout'
 import { BatchHistory } from '@/components/batch-history'
-import { getAllBatches } from '@/lib/mock-data'
 
 export default function PipelinePage() {
-  const batches = getAllBatches()
 
   return (
     <AppLayout>
@@ -19,7 +17,7 @@ export default function PipelinePage() {
         </div>
 
         {/* Batch History */}
-        <BatchHistory batches={batches} />
+        <BatchHistory />
       </div>
     </AppLayout>
   )
