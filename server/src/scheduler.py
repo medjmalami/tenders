@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -114,8 +114,8 @@ async def _save_tender(result: dict, batch_id: int) -> None:
 
 
 async def scrape_tenders_job():
-    date = "2026-06-24"
-    # date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+
+    date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
     res = await fetch_tuneps_tenders_by_date(date)
     tenders = res.get("payload", {}).get("data", [])
     print(f"Fetched {len(tenders)} tenders for {date}")
