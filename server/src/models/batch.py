@@ -20,9 +20,12 @@ class Batch(Base):
         Integer, nullable=False, default=0, server_default="0"
     )
 
+    # run date is the date the batch was run
     run_date: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+    # target date is the date the batch fetches tenders for
     target_date: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
