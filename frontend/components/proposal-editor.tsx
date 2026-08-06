@@ -8,7 +8,8 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import type { Tender } from '@/lib/types'
+import { markdownToDocxBlob } from '@/lib/markdown-to-docx'
+import { getTenderDisplayName, type Tender } from '@/lib/types'
 
 interface ProposalEditorProps {
   tender: Tender
@@ -28,8 +29,26 @@ export function ProposalEditor({ tender }: ProposalEditorProps) {
     toast.info('PDF export feature coming soon')
   }
 
-  const handleExportDOCX = () => {
-    toast.info('DOCX export feature coming soon')
+  const handleExportDOCX = async () => {
+    if (!finalContent.trim()) {
+      toast.error('Nothing to export yet')
+      return
+    }
+    try {
+      const blob = await markdownToDocxBlob(finalContent, getTenderDisplayName(tender))
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${tender.bidNum || 'proposal'}.docx`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast.success('DOCX downloaded')
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to generate DOCX')
+    }
   }
 
   return (
