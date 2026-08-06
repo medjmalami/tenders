@@ -1,13 +1,37 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
-from fastapi import Depends, Query
+from fastapi import Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.session import get_db
 from src.models.tender import Tender, TenderStatus
+
+
+class TenderRead(BaseModel):
+    id: int
+    batch_id: int
+    bid_num: str
+    bid_master_num: Optional[str]
+    bid_name_ar: Optional[str]
+    bid_name_fr: Optional[str]
+    bid_name_en: Optional[str]
+    scraped_data: dict
+    status: TenderStatus
+    date_published: Optional[date]
+    final_submission_date: Optional[date]
+    institution: Optional[str]
+    general_info: Optional[dict]
+    lots_info: Optional[dict]
+    llm_merged_object: Optional[dict]
+    llm_summary: Optional[str]
+    proposal_ai_generated: Optional[str]
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+    # updated_at and proposal_final intentionally excluded
 
 
 class TenderListItem(BaseModel):
@@ -90,4 +114,55 @@ async def list_tenders(
         page=(offset // PAGE_SIZE) + 1,
         page_size=PAGE_SIZE,
         tenders=items,
+    )
+
+
+async def get_tender(tender_id: int, db: AsyncSession = Depends(get_db)) -> TenderRead:
+    result = await db.execute(
+        select(
+            Tender.id,
+            Tender.batch_id,
+            Tender.bid_num,
+            Tender.bid_master_num,
+            Tender.bid_name_ar,
+            Tender.bid_name_fr,
+            Tender.bid_name_en,
+            Tender.scraped_data,
+            Tender.status,
+            Tender.date_published,
+            Tender.final_submission_date,
+            Tender.institution,
+            Tender.general_info,
+            Tender.lots_info,
+            Tender.llm_merged_object,
+            Tender.llm_summary,
+            Tender.proposal_ai_generated,
+            Tender.created_at,
+        ).where(Tender.id == tender_id)
+    )
+
+    tender = result.one_or_none()
+
+    if tender is None:
+        raise HTTPException(status_code=404, detail=f"Tender {tender_id} not found")
+
+    return TenderRead(
+        id=tender.id,
+        batch_id=tender.batch_id,
+        bid_num=tender.bid_num,
+        bid_master_num=tender.bid_master_num,
+        bid_name_ar=tender.bid_name_ar,
+        bid_name_fr=tender.bid_name_fr,
+        bid_name_en=tender.bid_name_en,
+        scraped_data=tender.scraped_data,
+        status=tender.status,
+        date_published=tender.date_published,
+        final_submission_date=tender.final_submission_date,
+        institution=tender.institution,
+        general_info=tender.general_info,
+        lots_info=tender.lots_info,
+        llm_merged_object=tender.llm_merged_object,
+        llm_summary=tender.llm_summary,
+        proposal_ai_generated=tender.proposal_ai_generated,
+        created_at=tender.created_at,
     )
