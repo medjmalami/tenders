@@ -1,4 +1,3 @@
-# src/schemas/dashboard.py
 import datetime
 from datetime import date, timedelta
 from typing import Optional
@@ -51,7 +50,6 @@ async def get_dashboard_stats(db: AsyncSession = Depends(get_db)) -> DashboardSt
     )
     counts = (await db.execute(counts_stmt)).one()
 
-    # last 10 tenders, only the fields we need
     recent_stmt = (
         select(
             Tender.id,
@@ -62,7 +60,10 @@ async def get_dashboard_stats(db: AsyncSession = Depends(get_db)) -> DashboardSt
             Tender.final_submission_date,
             Tender.status,
         )
-        .order_by(Tender.created_at.desc())
+        .order_by(
+            Tender.final_submission_date.asc().nullslast(),
+            Tender.id,
+        )
         .limit(10)
     )
     recent_rows = (await db.execute(recent_stmt)).all()
