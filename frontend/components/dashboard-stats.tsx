@@ -5,7 +5,7 @@ export function DashboardStats() {
   const stats = getDashboardStats()
 
   return (
-    <div className="grid grid-cols-4 gap-4">
+    <div className="grid grid-cols-3 gap-4">
       <Card className="p-6">
         <div className="text-sm text-muted-foreground">Total Tenders</div>
         <div className="mt-2 text-3xl font-bold text-foreground">{stats.totalTenders}</div>

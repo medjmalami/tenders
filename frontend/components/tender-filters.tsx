@@ -4,18 +4,12 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { getDistinctInstitutions } from '@/lib/mock-data'
 import type { TenderStatus } from '@/lib/types'
 
@@ -32,7 +26,6 @@ export interface FilterState {
 const statusOptions: TenderStatus[] = ['accepted', 'rejected', 'needs_more_data']
 
 export function TenderFilters({ onFiltersChange }: TenderFiltersProps) {
-  const institutions = getDistinctInstitutions()
   const [filters, setFilters] = useState<FilterState>({
     statuses: [],
   })
@@ -47,15 +40,6 @@ export function TenderFilters({ onFiltersChange }: TenderFiltersProps) {
       : [...filters.statuses, status]
 
     const newFilters = { ...filters, statuses: newStatuses }
-    setFilters(newFilters)
-    onFiltersChange?.(newFilters)
-  }
-
-  const handleInstitutionChange = (institution: string | null) => {
-    const newFilters = {
-      ...filters,
-      institution: institution === 'all' || institution === null ? undefined : institution,
-    }
     setFilters(newFilters)
     onFiltersChange?.(newFilters)
   }
@@ -104,28 +88,32 @@ export function TenderFilters({ onFiltersChange }: TenderFiltersProps) {
             </div>
           </fieldset>
 
-          {/* Institution Select */}
+          {/* Institution Search */}
           <div>
-            <span id="institution-label" className="text-sm font-medium text-foreground">
+            <label
+              htmlFor="institution-search"
+              className="text-sm font-medium text-foreground"
+            >
               Institution
-            </span>
-            <Select defaultValue="all" onValueChange={handleInstitutionChange}>
-              <SelectTrigger
-                id="institution-select"
-                aria-labelledby="institution-label"
-                className="mt-2"
-              >
-                <SelectValue placeholder="All institutions" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Institutions</SelectItem>
-                {institutions.map((inst) => (
-                  <SelectItem key={inst} value={inst}>
-                    {inst}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            </label>
+
+            <Input
+              id="institution-search"
+              className="mt-2"
+              placeholder="Search institution..."
+              value={filters.institution ?? ""}
+              onChange={(e) => {
+                const value = e.target.value.trim()
+
+                const newFilters = {
+                  ...filters,
+                  institution: value || undefined,
+                }
+
+                setFilters(newFilters)
+                onFiltersChange?.(newFilters)
+              }}
+            />
           </div>
 
           {/* Date Range Picker */}
