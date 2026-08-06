@@ -13,20 +13,8 @@ import {
 import remarkGfm from 'remark-gfm'
 import remarkParse from 'remark-parse'
 import { unified } from 'unified'
+import { type MdNode, parseMarkdown } from './markdown-ast'
 
-// Minimal mdast node shape — avoids pulling in @types/mdast as a hard dependency
-interface MdNode {
-  type: string
-  value?: string
-  depth?: number
-  ordered?: boolean
-  children?: MdNode[]
-}
-
-function parseMarkdown(markdown: string): MdNode {
-  const processor = unified().use(remarkParse).use(remarkGfm)
-  return processor.parse(markdown) as unknown as MdNode
-}
 
 interface Marks {
   bold?: boolean
