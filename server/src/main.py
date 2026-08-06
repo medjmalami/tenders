@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.routes import dashboard_routes, mock_routes, tender_routes
+from src.routes import batch_routes, dashboard_routes, mock_routes, tender_routes
 from src.scheduler import scheduler, start_scheduler
 
 
@@ -37,3 +37,4 @@ app.add_middleware(
 app.include_router(mock_routes.router)
 app.include_router(dashboard_routes.router)
 app.include_router(tender_routes.router)
+app.include_router(batch_routes.router)
