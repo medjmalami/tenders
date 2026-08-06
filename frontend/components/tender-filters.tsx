@@ -10,7 +10,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { getDistinctInstitutions } from '@/lib/mock-data'
 import type { TenderStatus } from '@/lib/types'
 
 interface TenderFiltersProps {
