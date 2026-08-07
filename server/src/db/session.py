@@ -9,7 +9,7 @@ DATABASE_URL = os.environ["DB_URL"]  # raises loudly if missing, no silent None
 
 engine = create_async_engine(
     DATABASE_URL,
-    echo=True,  # logs SQL, turn off in prod
+    echo=False,  # logs SQL, turn off in prod
     pool_size=5,
     max_overflow=10,
 )
