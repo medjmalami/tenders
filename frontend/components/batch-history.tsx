@@ -16,12 +16,14 @@ interface LatestBatch {
   run_number: number
   run_date: string
   tenders_found_count: number
+  tenders_failed_count: number
 }
 
 interface BatchListItem {
   id: number
   run_number: number
   tenders_found_count: number
+  tenders_failed_count: number
   run_date: string
   target_date: string
 }
@@ -84,7 +86,7 @@ export function BatchHistory() {
       {/* Latest Batch Summary */}
       {latest && (
         <Card className="p-6 bg-blue-50 dark:bg-blue-950">
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-4 gap-6">
             <div>
               <p className="text-xs text-muted-foreground">Latest Run #</p>
               <p className="mt-2 text-3xl font-bold text-foreground">{latest.run_number}</p>
@@ -99,6 +101,15 @@ export function BatchHistory() {
               <p className="text-xs text-muted-foreground">Tenders Found</p>
               <p className="mt-2 text-3xl font-bold text-foreground">{latest.tenders_found_count}</p>
             </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Tenders Failed</p>
+              <p
+                className={`mt-2 text-3xl font-bold ${latest.tenders_failed_count > 0 ? 'text-destructive' : 'text-foreground'
+                  }`}
+              >
+                {latest.tenders_failed_count}
+              </p>
+            </div>
           </div>
         </Card>
       )}
@@ -112,6 +123,7 @@ export function BatchHistory() {
               <TableHead>Run Date</TableHead>
               <TableHead>Target Date</TableHead>
               <TableHead>Tenders Found</TableHead>
+              <TableHead>Tenders Failed</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -121,6 +133,12 @@ export function BatchHistory() {
                 <TableCell>{new Date(batch.run_date).toLocaleDateString()}</TableCell>
                 <TableCell>{new Date(batch.target_date).toLocaleDateString()}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{batch.tenders_found_count}</TableCell>
+                <TableCell
+                  className={`text-sm ${batch.tenders_failed_count > 0 ? 'text-destructive font-medium' : 'text-muted-foreground'
+                    }`}
+                >
+                  {batch.tenders_failed_count}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
