@@ -15,6 +15,7 @@ class LatestBatchOut(BaseModel):
     run_number: int
     run_date: datetime
     tenders_found_count: int
+    tenders_failed_count: int
 
 
 class BatchListItemOut(BaseModel):
@@ -23,6 +24,7 @@ class BatchListItemOut(BaseModel):
     id: int
     run_number: int
     tenders_found_count: int
+    tenders_failed_count: int
     run_date: datetime
     target_date: datetime
 
