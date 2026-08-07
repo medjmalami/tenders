@@ -61,7 +61,6 @@ class Tender(Base):
     llm_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     proposal_ai_generated: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    proposal_final: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()

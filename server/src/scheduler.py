@@ -67,6 +67,16 @@ async def _create_batch(target_date: datetime, tenders_found_count: int) -> Batc
         return batch
 
 
+async def _set_batch_failed_count(batch_id: int, tenders_failed_count: int) -> None:
+    async with AsyncSessionLocal() as session:
+        batch = await session.get(Batch, batch_id)
+        if batch is None:
+            print(f"Could not update failed count: batch {batch_id} not found")
+            return
+        batch.tenders_failed_count = tenders_failed_count
+        await session.commit()
+
+
 async def _save_tender(result: dict, batch_id: int) -> None:
     tender_raw = result["tender_raw"] or {}
     tender_brief = result["tender_brief"] or {}
@@ -161,6 +171,12 @@ async def scrape_tenders_job():
             failed_saving += 1
             print(f"Failed to save tender {tender.get('bidNo')} to DB: {e}")
 
+    tenders_failed_count = failed_processing + failed_saving
+    try:
+        await _set_batch_failed_count(batch.id, tenders_failed_count)
+    except Exception as e:
+        print(f"Failed to update batch {batch.id} failed count: {e}")
+
     print(f"""
     ================================================================================
     ✅ BATCH COMPLETED
@@ -175,6 +191,7 @@ async def scrape_tenders_job():
 
     Processing Failures : {failed_processing}
     Database Failures   : {failed_saving}
+    Total Failed        : {tenders_failed_count}
 
     Finished At         : {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
     ================================================================================
