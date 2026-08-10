@@ -2,62 +2,62 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: tenders-postgres
+    restart: unless-stopped
+
     environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-tender}
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
+
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-tender}",
-        ]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 10
+
+    # Don't expose PostgreSQL publicly.
+    # Backend accesses it through Docker's network.
+    # ports:
+    #   - "5432:5432"
 
   backend:
     build:
       context: ./server
       dockerfile: Dockerfile
+
     container_name: tenders-backend
+    restart: unless-stopped
+
     environment:
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      DB_NAME: ${DB_NAME:-tender}
-      DB_URL: postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-tender}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+
     ports:
       - "8000:8000"
+
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ./server:/app
-      - backend-venv:/app/.venv
-      - backend-uv-python:/app/.uv-python
-    command: sh -c "uv run alembic upgrade head && uv run fastapi dev src/main.py --host 0.0.0.0 --port 8000"
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+
     container_name: tenders-frontend
+    restart: unless-stopped
+
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
+      NODE_ENV: production
     ports:
       - "3000:3000"
+
     depends_on:
       - backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
-
-volumes:
-  backend-venv:
-  backend-uv-python:
