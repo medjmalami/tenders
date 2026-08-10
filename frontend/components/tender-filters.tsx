@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Card } from '@/components/ui/card'
@@ -23,6 +23,7 @@ export interface FilterState {
 }
 
 const statusOptions: TenderStatus[] = ['accepted', 'rejected', 'needs_more_data']
+const INSTITUTION_DEBOUNCE_MS = 300
 
 export function TenderFilters({ onFiltersChange }: TenderFiltersProps) {
   const [filters, setFilters] = useState<FilterState>({
@@ -32,34 +33,57 @@ export function TenderFilters({ onFiltersChange }: TenderFiltersProps) {
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [dateFrom, setDateFrom] = useState<Date | undefined>()
   const [dateTo, setDateTo] = useState<Date | undefined>()
+  const [institutionInput, setInstitutionInput] = useState('')
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [])
+
+  const commitFilters = (next: FilterState) => {
+    setFilters(next)
+    onFiltersChange?.(next)
+  }
 
   const handleStatusToggle = (status: TenderStatus) => {
     const newStatuses = filters.statuses.includes(status)
       ? filters.statuses.filter((s) => s !== status)
       : [...filters.statuses, status]
 
-    const newFilters = { ...filters, statuses: newStatuses }
-    setFilters(newFilters)
-    onFiltersChange?.(newFilters)
+    commitFilters({ ...filters, statuses: newStatuses })
   }
 
   const handleDateRangeSet = () => {
     if (dateFrom && dateTo) {
-      const newFilters = { ...filters, dateRange: { from: dateFrom, to: dateTo } }
-      setFilters(newFilters)
-      onFiltersChange?.(newFilters)
+      commitFilters({ ...filters, dateRange: { from: dateFrom, to: dateTo } })
       setShowDatePicker(false)
     }
   }
 
   const handleClearFilters = () => {
-    const newFilters: FilterState = {
-      statuses: [],
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current)
+      debounceRef.current = null
     }
-    setFilters(newFilters)
+    setInstitutionInput('')
     setDateFrom(undefined)
     setDateTo(undefined)
-    onFiltersChange?.(newFilters)
+    commitFilters({ statuses: [] })
+  }
+
+  const handleInstitutionChange = (value: string) => {
+    setInstitutionInput(value)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      const trimmed = value.trim()
+      commitFilters({
+        ...filters,
+        institution: trimmed || undefined,
+      })
+    }, INSTITUTION_DEBOUNCE_MS)
   }
 
   return (
@@ -100,18 +124,8 @@ export function TenderFilters({ onFiltersChange }: TenderFiltersProps) {
               id="institution-search"
               className="mt-2"
               placeholder="Search institution..."
-              value={filters.institution ?? ""}
-              onChange={(e) => {
-                const value = e.target.value.trim()
-
-                const newFilters = {
-                  ...filters,
-                  institution: value || undefined,
-                }
-
-                setFilters(newFilters)
-                onFiltersChange?.(newFilters)
-              }}
+              value={institutionInput}
+              onChange={(e) => handleInstitutionChange(e.target.value)}
             />
           </div>
 

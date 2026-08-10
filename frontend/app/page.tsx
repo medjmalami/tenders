@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppLayout } from "@/components/app-layout";
 import { DashboardStats } from "@/components/dashboard-stats";
 import { type FilterState, TenderFilters } from "@/components/tender-filters";
@@ -17,7 +17,7 @@ function toDateParam(date: Date) {
 export default function Dashboard() {
   const [filters, setFilters] = useState<FilterState>({ statuses: [] });
   const [currentPage, setCurrentPage] = useState(1);
-  const [usedInitialTenders, setUsedInitialTenders] = useState(false);
+
   const [stats, setStats] = useState({
     totalTenders: 0,
     acceptedTenders: 0,
@@ -30,44 +30,35 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Initial dashboard load
-  useEffect(() => {
-    setIsLoading(true);
+  const tendersRequestId = useRef(0);
 
+  // Load dashboard stats once
+  useEffect(() => {
+    let cancelled = false;
     getDashboardStats()
       .then((data) => {
+        if (cancelled) return;
         setStats({
           totalTenders: data.totalTenders,
           acceptedTenders: data.acceptedTenders,
           dueWithin7Days: data.dueWithin7Days,
         });
-
-        setTenders(data.recentTenders);
         setTotal(data.totalTenders);
-        setUsedInitialTenders(true);
       })
       .catch((err) => {
+        if (cancelled) return;
         console.error("Failed to load dashboard:", err);
         setError("Failed to load dashboard.");
-      })
-      .finally(() => setIsLoading(false));
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Fetch only when navigating pages or filtering
+  // Fetch tenders when filters or page change
   useEffect(() => {
-    const hasFilters =
-      filters.statuses.length > 0 ||
-      filters.institution ||
-      filters.dateRange;
-
-    const isInitialPage =
-      currentPage === 1 && !hasFilters && !usedInitialTenders;
-
-    if (isInitialPage) {
-      setUsedInitialTenders(true);
-      return;
-    }
-
+    let cancelled = false;
+    const requestId = ++tendersRequestId.current;
     setIsLoading(true);
     setError(null);
 
@@ -84,15 +75,24 @@ export default function Dashboard() {
         : undefined,
     })
       .then((data) => {
+        if (cancelled || requestId !== tendersRequestId.current) return;
         setTenders(data.tenders);
         setTotal(data.total);
       })
       .catch((err) => {
+        if (cancelled || requestId !== tendersRequestId.current) return;
         console.error("Failed to load tenders:", err);
         setError("Failed to load tenders.");
       })
-      .finally(() => setIsLoading(false));
-  }, [filters, currentPage, usedInitialTenders]);
+      .finally(() => {
+        if (cancelled || requestId !== tendersRequestId.current) return;
+        setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [filters, currentPage]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
