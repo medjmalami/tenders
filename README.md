@@ -1,5 +1,25 @@
 # Tenders
 
+## About this project
+
+I designed and built the pipeline architecture end-to-end during my AI
+Engineer internship at ZetaBox, iterating through several designs before
+landing on the current one:
+
+- **v1**: `setInterval`-based scraping with parallel LangGraph fan-out per
+  tender.
+- **v2**: moved enrichment (`getTender`, `getArticles`) inside the graph
+  as conditional steps rather than pre-fetching everything up front.
+- **v3 (current)**: serialized processing through a single FastAPI
+  service, per mentor guidance to avoid premature microservices — the
+  graph in `server/src/graph/graph.py` reflects this.
+
+The architecture, database schema, migration setup, and the ranker /
+augmentation / drafter node logic are my design decisions. Company-specific
+data (employee/project records used by the drafter's tools) is mocked for
+this public repo.
+
+
 Automated discovery and triage of public procurement tenders published on
 [TUNEPS](https://www.tuneps.tn) (Tunisian e-Procurement Portal). A scheduled
 job scrapes tenders published the previous day, runs each one through a
