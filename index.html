@@ -550,8 +550,8 @@ svg .pill{ fill:var(--bg); stroke:var(--orange); stroke-width:1; }
       <text class="sub" x="270" y="202" text-anchor="middle">sets status:</text>
       <text class="sub" x="270" y="215" text-anchor="middle">rejected / unsure / accepted</text>
 
-      <!-- ranker -> END reject -->
-      <path class="edge reject" d="M270,150 C 270,60 500,50 780,80" marker-end="url(#alg)"/>
+      <!-- ranker -> END reject (now reaches the END circle) -->
+      <path class="edge reject" d="M270,150 C 270,60 500,50 856,80" marker-end="url(#alg)"/>
       <text class="edge-lbl" x="500" y="55" text-anchor="middle" fill="var(--red)">status = rejected</text>
 
       <!-- ranker -> getDetailedPage (unsure or accepted) -->
@@ -577,7 +577,7 @@ svg .pill{ fill:var(--bg); stroke:var(--orange); stroke-width:1; }
 
       <rect class="box green" x="730" y="175" width="160" height="80" rx="12"/>
       <text class="lbl" x="810" y="209" text-anchor="middle" style="font-size:13px">makeDraft</text>
-      <text class="sub" x="810" y="227" text-anchor="middle">crafts the CEO email</text>
+      <text class="sub" x="810" y="227" text-anchor="middle">crafts proposal</text>
 
       <circle cx="890" cy="80" r="34" fill="var(--surface-2)" stroke="var(--text)" stroke-width="1.5"/>
       <text class="lbl" x="890" y="85" text-anchor="middle" style="font-size:12px">END</text>
